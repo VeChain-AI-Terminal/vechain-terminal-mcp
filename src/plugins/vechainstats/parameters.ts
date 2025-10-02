@@ -111,6 +111,12 @@ export class GetBlockByTimestampParameters extends createToolParameters(
   })
 ) {}
 
+export class GetBlockByReferenceParameters extends createToolParameters(
+  z.object({
+    blockref: z.string().describe('Block reference (8-byte hex string)'),
+  })
+) {}
+
 export class GetBlockStatsParameters extends createToolParameters(
   z.object({
     date: z.string().optional().describe('Date in YYYY-MM-DD format'),

@@ -15,6 +15,7 @@ import {
   GetTransactionParameters,
   GetBlockInfoParameters,
   GetBlockByTimestampParameters,
+  GetBlockByReferenceParameters,
   GetBlockStatsParameters,
   GetContractInfoParameters,
   GetNFTInfoParameters,
@@ -262,8 +263,8 @@ export class VeChainStatsService {
     name: 'vechainstats_get_block_by_reference',
     description: 'Get block by block reference (8-byte hex string)',
   })
-  async getBlockByReference(parameters: GetBlockInfoParameters) {
-    return this.api.getBlockByReference(parameters.params.blocknum.toString());
+  async getBlockByReference(parameters: GetBlockByReferenceParameters) {
+    return this.api.getBlockByReference(parameters.params.blockref);
   }
 
   @Tool({
@@ -348,7 +349,7 @@ export class VeChainStatsService {
     description: 'Get gas price statistics and trends',
   })
   async getGasStats(parameters: NoParameters) {
-    return this.api.getGasStats('2024-01-01'); // Provide a default timeframe
+    return this.api.getGasStats('2024-01-01'); // Use a valid date format
   }
 
   @Tool({
