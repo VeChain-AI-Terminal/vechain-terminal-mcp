@@ -99,6 +99,7 @@ function validateMethodParameters(
     parameters: {
       index: methodParameters.indexOf(parametersParameter) as number,
       schema: parametersParameter.prototype.constructor.schema,
+      constructor: parametersParameter,
     },
     ...(walletClientParameter
       ? { walletClient: { index: methodParameters.indexOf(walletClientParameter) as number } }
@@ -117,7 +118,7 @@ function isWalletClientParameter(param: any): boolean {
 }
 
 function isParametersParameter(param: any): boolean {
-  return param.prototype?.constructor?.schema != null;
+  return param.prototype?.constructor?.schema != null || param.schema != null;
 }
 
 

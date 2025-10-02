@@ -140,15 +140,15 @@ export class VeChainStatsClient {
   /**
    * Get token information
    */
-  async getTokenInfo(contract: string) {
-    return this.request<any>('/token/info', { contract });
+  async getTokenInfo(token: string) {
+    return this.request<any>('/token/info', { token });
   }
 
   /**
    * Get current token price in USD
    */
-  async getTokenPrice(symbol: string) {
-    return this.request<any>('/token/price', { symbol });
+  async getTokenPrice(token: string) {
+    return this.request<any>('/token/price', { token });
   }
 
   /**
@@ -161,15 +161,15 @@ export class VeChainStatsClient {
   /**
    * Get token supply
    */
-  async getTokenSupply(contract: string) {
-    return this.request<any>('/token/supply', { contract });
+  async getTokenSupply(token: string) {
+    return this.request<any>('/token/supply', { token });
   }
 
   /**
    * Get token holder list
    */
-  async getTokenHolders(contract: string, page = 1, limit = 20) {
-    return this.request<any>('/token/holder-list', { contract, page, limit });
+  async getTokenHolders(token: string, page = 1, threshold?: number) {
+    return this.request<any>('/token/holder-list', { token, page, threshold });
   }
 
   // ==================== TRANSACTION ENDPOINTS ====================
@@ -200,15 +200,15 @@ export class VeChainStatsClient {
   /**
    * Get block information
    */
-  async getBlockInfo(block: number | string) {
-    return this.request<any>('/block/info', { block });
+  async getBlockInfo(blocknum: number) {
+    return this.request<any>('/block/info', { blocknum });
   }
 
   /**
    * Get block by timestamp
    */
-  async getBlockByTimestamp(timestamp: number) {
-    return this.request<any>('/block/blocktime', { timestamp });
+  async getBlockByTimestamp(blockts: number) {
+    return this.request<any>('/block/blocktime', { blockts });
   }
 
   // ==================== CONTRACT ENDPOINTS ====================
@@ -216,8 +216,8 @@ export class VeChainStatsClient {
   /**
    * Get contract information
    */
-  async getContractInfo(contract: string) {
-    return this.request<any>('/contract/info', { contract });
+  async getContractInfo(address: string) {
+    return this.request<any>('/contract/info', { address });
   }
 
   /**
@@ -239,15 +239,15 @@ export class VeChainStatsClient {
   /**
    * Get NFT information
    */
-  async getNFTInfo(contract: string) {
-    return this.request<any>('/nft/info', { contract });
+  async getNFTInfo(id: string) {
+    return this.request<any>('/nft/info', { id });
   }
 
   /**
    * Get NFT holder list
    */
-  async getNFTHolders(contract: string, page = 1, limit = 20) {
-    return this.request<any>('/nft/holder-list', { contract, page, limit });
+  async getNFTHolders(id: string, page = 1, threshold?: number) {
+    return this.request<any>('/nft/holder-list', { id, page, threshold });
   }
 
   // ==================== NETWORK ENDPOINTS ====================

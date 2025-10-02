@@ -46,7 +46,7 @@ async function main() {
     wallet: walletClient,
     plugins: [
       token(),           // VET and VIP-180 token operations
-      vechainstats(),    // Comprehensive blockchain analytics
+      vechainstats(),    // Simplified blockchain analytics
       bridge(),          // WanBridge cross-chain transfers
       vebetter(),        // VeBetter DAO rewards
       dex(),             // DEX swaps (VeSwap, BetterSwap, etc.)

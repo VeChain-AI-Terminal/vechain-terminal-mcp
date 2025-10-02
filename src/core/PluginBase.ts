@@ -57,7 +57,15 @@ export abstract class PluginBase<TWalletClient extends WalletClientBase = Wallet
               if (tool.walletClient) {
                 args[tool.walletClient.index] = walletClient;
               }
-              args[tool.parameters.index] = params;
+              
+              // Instantiate the parameter class with the parsed parameters
+              try {
+                const parameterInstance = new (tool.parameters as any).constructor(params);
+                args[tool.parameters.index] = parameterInstance;
+              } catch (error) {
+                console.error('PluginBase: Parameter instantiation failed:', error);
+                throw error;
+              }
 
               return tool.target.apply(toolProvider, args);
             }

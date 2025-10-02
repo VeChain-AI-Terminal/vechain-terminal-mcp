@@ -209,7 +209,7 @@ export class VeChainStatsService {
     return this.api.getTokenHolders(
       parameters.params.token,
       parameters.params.page,
-      20
+      parameters.params.threshold
     );
   }
 
@@ -322,7 +322,7 @@ export class VeChainStatsService {
     return this.api.getNFTHolders(
       parameters.params.id,
       parameters.params.page,
-      20
+      parameters.params.threshold
     );
   }
 
