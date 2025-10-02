@@ -67,7 +67,7 @@ export class VeChainStatsService {
     return this.api.getTransactionsIn(
       parameters.params.address,
       parameters.params.page,
-      20
+      parameters.params.sort
     );
   }
 
@@ -79,7 +79,7 @@ export class VeChainStatsService {
     return this.api.getTransactionsOut(
       parameters.params.address,
       parameters.params.page,
-      20
+      parameters.params.sort
     );
   }
 
@@ -91,7 +91,8 @@ export class VeChainStatsService {
     return this.api.getTokenTransfers(
       parameters.params.address,
       parameters.params.page,
-      20
+      parameters.params.tokenType,
+      parameters.params.sort
     );
   }
 
@@ -103,7 +104,7 @@ export class VeChainStatsService {
     return this.api.getNFTTransfers(
       parameters.params.address,
       parameters.params.page,
-      20
+      parameters.params.sort
     );
   }
 
@@ -262,9 +263,7 @@ export class VeChainStatsService {
     description: 'Get block by block reference (8-byte hex string)',
   })
   async getBlockByReference(parameters: GetBlockInfoParameters) {
-    return this.api.request('/block/blockref', {
-      blockref: parameters.params.blocknum, // Reusing parameter but for blockref
-    });
+    return this.api.getBlockByReference(parameters.params.blocknum.toString());
   }
 
   @Tool({
@@ -349,7 +348,7 @@ export class VeChainStatsService {
     description: 'Get gas price statistics and trends',
   })
   async getGasStats(parameters: NoParameters) {
-    return this.api.getGasStats();
+    return this.api.getGasStats('2024-01-01'); // Provide a default timeframe
   }
 
   @Tool({
@@ -357,7 +356,7 @@ export class VeChainStatsService {
     description: 'Get current mempool information (pending transactions)',
   })
   async getMempool(parameters: NoParameters) {
-    return this.api.getMempool();
+    return this.api.getMempool(true);
   }
 
   @Tool({

@@ -96,29 +96,29 @@ export class VeChainStatsClient {
   /**
    * Get incoming transactions
    */
-  async getTransactionsIn(address: string, page = 1, limit = 20) {
-    return this.request<any>('/account/txin', { address, page, limit });
+  async getTransactionsIn(address: string, page = 1, sort: 'asc' | 'desc' = 'desc') {
+    return this.request<any>('/account/txin', { address, page, sort });
   }
 
   /**
    * Get outgoing transactions
    */
-  async getTransactionsOut(address: string, page = 1, limit = 20) {
-    return this.request<any>('/account/txout', { address, page, limit });
+  async getTransactionsOut(address: string, page = 1, sort: 'asc' | 'desc' = 'desc') {
+    return this.request<any>('/account/txout', { address, page, sort });
   }
 
   /**
    * Get token transfers for an address
    */
-  async getTokenTransfers(address: string, page = 1, limit = 20) {
-    return this.request<any>('/account/token-transfers', { address, page, limit });
+  async getTokenTransfers(address: string, page = 1, tokenType: string = 'vip180', sort: 'asc' | 'desc' = 'desc') {
+    return this.request<any>('/account/token-transfers', { address, page, token_type: tokenType, sort });
   }
 
   /**
    * Get NFT transfers for an address
    */
-  async getNFTTransfers(address: string, page = 1, limit = 20) {
-    return this.request<any>('/account/nft-transfers', { address, page, limit });
+  async getNFTTransfers(address: string, page = 1, sort: 'asc' | 'desc' = 'desc') {
+    return this.request<any>('/account/nft-transfers', { address, page, sort });
   }
 
   /**
@@ -211,6 +211,13 @@ export class VeChainStatsClient {
     return this.request<any>('/block/blocktime', { blockts });
   }
 
+  /**
+   * Get block by reference (8-byte hex string)
+   */
+  async getBlockByReference(blockref: string) {
+    return this.request<any>('/block/blockref', { blockref });
+  }
+
   // ==================== CONTRACT ENDPOINTS ====================
 
   /**
@@ -269,15 +276,16 @@ export class VeChainStatsClient {
   /**
    * Get gas statistics
    */
-  async getGasStats() {
-    return this.request<any>('/network/gas-stats');
+  async getGasStats(timeframe?: string) {
+    const params = timeframe ? { timeframe } : {};
+    return this.request<any>('/network/gas-stats', params);
   }
 
   /**
    * Get mempool information
    */
-  async getMempool() {
-    return this.request<any>('/network/mempool');
+  async getMempool(expanded = true) {
+    return this.request<any>('/network/mempool', { expanded });
   }
 
   // ==================== CARBON ENDPOINTS ====================
