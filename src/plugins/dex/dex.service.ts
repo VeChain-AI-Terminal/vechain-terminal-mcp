@@ -137,7 +137,7 @@ export class DEXService {
       
       const getAmountsOut = UNISWAP_V2_ROUTER_ABI.find(f => f.name === 'getAmountsOut')!;
 
-      const routerContract = thor.contracts.get(routerAddress, [getAmountsOut]);
+      const routerContract = thor.contracts.getContract(routerAddress, [getAmountsOut]);
 
       const result = await routerContract.methods.getAmountsOut(amountInWei.toString(), path).call();
       const amounts = result.decoded[0];
@@ -349,7 +349,7 @@ export class DEXService {
       
       const getPairFunc = UNISWAP_V2_FACTORY_ABI.find(f => f.name === 'getPair')!;
 
-      const factoryContract = thor.contracts.get(factoryAddress, [getPairFunc]);
+      const factoryContract = thor.contracts.getContract(factoryAddress, [getPairFunc]);
 
       const pairResult = await factoryContract.methods.getPair(tokenAAddress, tokenBAddress).call();
       const pairAddress = pairResult.decoded[0];
@@ -367,7 +367,7 @@ export class DEXService {
       const token0Func = UNISWAP_V2_PAIR_ABI.find(f => f.name === 'token0')!;
       const token1Func = UNISWAP_V2_PAIR_ABI.find(f => f.name === 'token1')!;
 
-      const pairContract = thor.contracts.get(pairAddress, [
+      const pairContract = thor.contracts.getContract(pairAddress, [
         getReservesFunc,
         token0Func,
         token1Func
@@ -584,9 +584,15 @@ export class DEXService {
       return tokenIdentifier;
     }
 
-    // Resolve from token registry (VET swaps use WVET address in path)
+    // Resolve from token registry
     try {
       const token = getToken(tokenIdentifier, this.network);
+      
+      // For native tokens like VET, use zero address in swap path
+      if (token.isNative) {
+        return '0x0000000000000000000000000000000000000000';
+      }
+      
       if (!token.address) {
         throw new Error(`Token '${tokenIdentifier}' has no address on ${this.network}`);
       }
@@ -647,7 +653,7 @@ export class DEXService {
       // Get pair reserves
       const thor = (walletClient as any).thor;
       const getPairFunc = UNISWAP_V2_FACTORY_ABI.find(f => f.name === 'getPair')!;
-      const factoryContract = thor.contracts.get(factoryAddress, [getPairFunc]);
+      const factoryContract = thor.contracts.getContract(factoryAddress, [getPairFunc]);
 
       const pairResult = await factoryContract.methods.getPair(fromTokenAddress, toTokenAddress).call();
       const pairAddress = pairResult.decoded[0];
@@ -661,7 +667,7 @@ export class DEXService {
       const token0Func = UNISWAP_V2_PAIR_ABI.find(f => f.name === 'token0')!;
       const token1Func = UNISWAP_V2_PAIR_ABI.find(f => f.name === 'token1')!;
       
-      const pairContract = thor.contracts.get(pairAddress, [
+      const pairContract = thor.contracts.getContract(pairAddress, [
         getReservesFunc,
         token0Func,
         token1Func
