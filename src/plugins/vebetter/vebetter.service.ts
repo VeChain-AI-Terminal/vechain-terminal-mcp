@@ -73,7 +73,7 @@ export class VeBetterService {
   })
   async submitAction(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof SubmitActionParameters>
+    parameters: SubmitActionParameters
   ) {
     try {
       const { appId, description, proofType, proofValue, impactCodes, impactValues } = parameters.params;
@@ -153,7 +153,7 @@ export class VeBetterService {
   })
   async checkAvailableFunds(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetAvailableFundsParameters>
+    parameters: GetAvailableFundsParameters
   ) {
     try {
       const { appId } = parameters.params;
@@ -201,7 +201,7 @@ export class VeBetterService {
   })
   async getAppInfo(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetAppInfoParameters>
+    parameters: GetAppInfoParameters
   ) {
     try {
       const { appId } = parameters.params;
@@ -260,7 +260,7 @@ export class VeBetterService {
   })
   async claimRewards(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof ClaimRewardsParameters>
+    parameters: ClaimRewardsParameters
   ) {
     try {
       const { appId, amount } = parameters.params;
@@ -320,7 +320,7 @@ export class VeBetterService {
     name: 'vebetter_get_impact_categories',
     description: 'Get list of valid impact categories for VeBetter submissions',
   })
-  async getImpactCategories(parameters: InstanceType<typeof GetImpactCategoriesParameters>) {
+  async getImpactCategories(parameters: GetImpactCategoriesParameters) {
     // Standard impact categories recognized by VeBetter DAO
     return {
       success: true,
@@ -346,7 +346,7 @@ export class VeBetterService {
     name: 'vebetter_example_submissions',
     description: 'Get example submissions for different sustainable actions',
   })
-  async getExampleSubmissions(parameters: InstanceType<typeof GetImpactCategoriesParameters>) {
+  async getExampleSubmissions(parameters: GetImpactCategoriesParameters) {
     return {
       success: true,
       examples: [

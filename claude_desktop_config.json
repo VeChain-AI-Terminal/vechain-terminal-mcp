@@ -1,13 +1,12 @@
 {
-  "mcpServers": {
-    "vechain-mcp-server": {
-      "command": "node",
-      "args": ["/Users/apple/dev/hackathon/vchain/vechain-mcp-server/dist/index.js"],
-      "env": {
-        "VECHAIN_NETWORK": "testnet",
-        "WALLET_MNEMONIC": "denial kitchen pet squirrel other broom bar gas better priority spoil cross",
-        "WALLET_PRIVATE_KEY": ""
-      }
+    "mcpServers": {
+        "vechain-mcp": {
+            "command": "node",
+            "args": ["/Users/apple/dev/hackathon/vchain/vechain-mcp-server/dist/index.js"],
+            "env": {
+                "WALLET_MNEMONIC": "symptom bacon youth victory order unlock brand demand route ostrich wall weird",
+                "VECHAIN_NETWORK": "testnet"
+            }
+        }
     }
-  }
 }

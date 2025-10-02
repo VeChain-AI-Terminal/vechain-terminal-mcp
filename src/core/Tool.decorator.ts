@@ -83,7 +83,7 @@ function validateMethodParameters(
     throw new Error(`${logPrefix} has no parameters. ${explainer}`);
   }
   if (methodParameters.length > 2) {
-    throw new Error(`${logPrefix} has ${methodParameters.length} parameters. ${explainer}`);
+    throw new Error(`${logPrefix} has ${methodParameters.length} parameters. Tool methods can have 1-2 parameters: (parameters) or (walletClient, parameters).`);
   }
 
   const parametersParameter = methodParameters.find(isParametersParameter);

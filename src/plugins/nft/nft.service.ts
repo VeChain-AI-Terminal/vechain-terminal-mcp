@@ -90,7 +90,7 @@ export class NFTService {
     name: 'nft_get_all_collections',
     description: 'Get all NFT collections on VeChain (uses VeChainStats API)',
   })
-  async getAllCollections(parameters: InstanceType<typeof EmptyParameters>) {
+  async getAllCollections(parameters: EmptyParameters) {
     return {
       success: true,
       message: 'Use vechainstats_get_nft_list tool for complete collection data',
@@ -109,7 +109,7 @@ export class NFTService {
   })
   async getCollectionInfo(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetNFTCollectionInfoParameters>
+    parameters: GetNFTCollectionInfoParameters
   ) {
     try {
       const { collectionId } = parameters.params;
@@ -155,7 +155,7 @@ export class NFTService {
   })
   async getOwnedTokens(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetNFTsByOwnerParameters>
+    parameters: GetNFTsByOwnerParameters
   ) {
     try {
       const { address, collectionAddress } = parameters.params;
@@ -240,7 +240,7 @@ export class NFTService {
   })
   async getNFTMetadata(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetNFTMetadataParameters>
+    parameters: GetNFTMetadataParameters
   ) {
     try {
       const { contractAddress, tokenId } = parameters.params;
@@ -297,7 +297,7 @@ export class NFTService {
     name: 'nft_get_transfer_history',
     description: 'Get NFT transfer history for an address (uses VeChainStats)',
   })
-  async getTransferHistory(parameters: InstanceType<typeof GetNFTTransferHistoryParameters>) {
+  async getTransferHistory(parameters: GetNFTTransferHistoryParameters) {
     const { address, page } = parameters.params;
 
     return {
@@ -317,7 +317,7 @@ export class NFTService {
   })
   async mintNFT(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof MintNFTParameters>
+    parameters: MintNFTParameters
   ) {
     try {
       const { contractAddress, to, tokenId, tokenURI } = parameters.params;
@@ -397,7 +397,7 @@ export class NFTService {
   })
   async transferNFT(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof TransferNFTParameters>
+    parameters: TransferNFTParameters
   ) {
     try {
       const { contractAddress, to, tokenId, safe } = parameters.params;
@@ -456,7 +456,7 @@ export class NFTService {
   })
   async approveNFT(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof ApproveNFTParameters>
+    parameters: ApproveNFTParameters
   ) {
     try {
       const { contractAddress, tokenId, operator } = parameters.params;
@@ -508,7 +508,7 @@ export class NFTService {
   })
   async checkOwnership(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetNFTMetadataParameters>
+    parameters: GetNFTMetadataParameters
   ) {
     try {
       const { contractAddress, tokenId } = parameters.params;
@@ -546,7 +546,7 @@ export class NFTService {
     name: 'nft_get_floor_price',
     description: 'Get floor price and market data for an NFT collection (uses VeChainStats)',
   })
-  async getFloorPrice(parameters: InstanceType<typeof GetNFTCollectionInfoParameters>) {
+  async getFloorPrice(parameters: GetNFTCollectionInfoParameters) {
     const { collectionId } = parameters.params;
 
     return {
@@ -564,7 +564,7 @@ export class NFTService {
   })
   async burnNFT(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetNFTMetadataParameters>
+    parameters: GetNFTMetadataParameters
   ) {
     try {
       const { contractAddress, tokenId } = parameters.params;

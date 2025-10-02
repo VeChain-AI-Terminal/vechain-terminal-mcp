@@ -144,7 +144,7 @@ export class BridgeService {
     name: 'bridge_get_token_pairs',
     description: 'Get all available cross-chain token pairs (300+ pairs across 25+ chains)',
   })
-  async getTokenPairs(parameters: InstanceType<typeof GetTokenPairsParameters>) {
+  async getTokenPairs(parameters: GetTokenPairsParameters) {
     try {
       const response = await fetch(`${this.wanbridgeApi}/tokenPairs`);
       const data = await response.json() as any;
@@ -207,7 +207,7 @@ export class BridgeService {
     name: 'bridge_get_quota_and_fee',
     description: 'Get bridge quota (min/max limits) and fees in one call (section 1.2.3)',
   })
-  async getQuotaAndFee(parameters: InstanceType<typeof GetQuotaAndFeeParameters>) {
+  async getQuotaAndFee(parameters: GetQuotaAndFeeParameters) {
     try {
       const { fromChainType, toChainType, symbol, tokenPairID } = parameters.params;
 
@@ -264,7 +264,7 @@ export class BridgeService {
     name: 'bridge_create_transaction',
     description: 'Create a cross-chain bridge transaction using WanBridge API (section 2.2). Returns transaction data ready for wallet signing.',
   })
-  async createBridgeTransaction(parameters: InstanceType<typeof CreateBridgeTransactionParameters>) {
+  async createBridgeTransaction(parameters: CreateBridgeTransactionParameters) {
     try {
       const requestBody = {
         fromChain: parameters.params.fromChain,
@@ -356,7 +356,7 @@ export class BridgeService {
     name: 'bridge_check_status',
     description: 'Check cross-chain bridge transaction status (section 4.1). Accepts hash from either source or destination chain.',
   })
-  async checkBridgeStatus(parameters: InstanceType<typeof CheckBridgeStatusParameters>) {
+  async checkBridgeStatus(parameters: CheckBridgeStatusParameters) {
     try {
       const response = await fetch(`${this.wanbridgeApi}/status/${parameters.params.txHash}`);
       const result = await response.json() as any;
@@ -403,7 +403,7 @@ export class BridgeService {
     name: 'bridge_get_smg_id',
     description: 'Get current Storeman Group ID (smgID) for cross-chain operations (section 1.4)',
   })
-  async getSmgID(parameters: InstanceType<typeof GetSmgIDParameters>) {
+  async getSmgID(parameters: GetSmgIDParameters) {
     try {
       const response = await fetch(`${this.wanbridgeApi}/smgID`);
       const result = await response.json() as any;
@@ -431,7 +431,7 @@ export class BridgeService {
     name: 'bridge_get_token_pairs_hash',
     description: 'Get hash of token pairs data to check if it changed (for caching optimization)',
   })
-  async getTokenPairsHash(parameters: InstanceType<typeof GetSmgIDParameters>) {
+  async getTokenPairsHash(parameters: GetSmgIDParameters) {
     try {
       const response = await fetch(`${this.wanbridgeApi}/tokenPairsHash`);
       const result = await response.json() as any;
@@ -459,7 +459,7 @@ export class BridgeService {
     name: 'xflows_get_quote',
     description: 'Get quote for cross-chain swap with DEX integration (XFlows API, section 4)',
   })
-  async getXFlowsQuote(parameters: InstanceType<typeof XFlowsQuoteParameters>) {
+  async getXFlowsQuote(parameters: XFlowsQuoteParameters) {
     try {
       const response = await fetch(`${this.xflowsApi}/quote`, {
         method: 'POST',
@@ -508,7 +508,7 @@ export class BridgeService {
     name: 'xflows_build_transaction',
     description: 'Build cross-chain swap transaction using XFlows (section 5)',
   })
-  async buildXFlowsTransaction(parameters: InstanceType<typeof XFlowsQuoteParameters>) {
+  async buildXFlowsTransaction(parameters: XFlowsQuoteParameters) {
     try {
       const response = await fetch(`${this.xflowsApi}/buildTx`, {
         method: 'POST',
@@ -540,7 +540,7 @@ export class BridgeService {
     name: 'xflows_check_status',
     description: 'Check XFlows cross-chain swap status (section 6)',
   })
-  async checkXFlowsStatus(parameters: InstanceType<typeof XFlowsStatusParameters>) {
+  async checkXFlowsStatus(parameters: XFlowsStatusParameters) {
     try {
       const requestBody = {
         hash: parameters.params.hash
@@ -591,7 +591,7 @@ export class BridgeService {
     name: 'xflows_get_supported_chains',
     description: 'Get all chains supported by XFlows (section 3.1)',
   })
-  async getXFlowsSupportedChains(parameters: InstanceType<typeof GetSmgIDParameters>) {
+  async getXFlowsSupportedChains(parameters: GetSmgIDParameters) {
     try {
       const response = await fetch(`${this.xflowsApi}/supported/chains`);
       const result = await response.json() as any;
@@ -624,7 +624,7 @@ export class BridgeService {
     name: 'xflows_get_supported_tokens',
     description: 'Get all tokens supported by XFlows for a specific chain (section 3.2)',
   })
-  async getXFlowsSupportedTokens(parameters: InstanceType<typeof XFlowsTokensParameters>) {
+  async getXFlowsSupportedTokens(parameters: XFlowsTokensParameters) {
     try {
       const chainId = parameters.params.chainId;
       const url = chainId ? 

@@ -99,7 +99,7 @@ export class DEXService {
   })
   async getSwapQuote(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetSwapQuoteParameters>
+    parameters: GetSwapQuoteParameters
   ) {
     try {
       const { dexName, fromToken, toToken, amountIn } = parameters.params;
@@ -187,7 +187,7 @@ export class DEXService {
   })
   async executeSwap(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof ExecuteSwapParameters>
+    parameters: ExecuteSwapParameters
   ) {
     try {
       const { dexName, fromToken, toToken, amountIn, amountOutMin, slippageTolerance } = parameters.params;
@@ -326,7 +326,7 @@ export class DEXService {
   })
   async getPairReserves(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetPairReservesParameters>
+    parameters: GetPairReservesParameters
   ) {
     try {
       const { dexName, tokenA, tokenB } = parameters.params;
@@ -426,7 +426,7 @@ export class DEXService {
     name: 'dex_get_available_dexes',
     description: 'Get list of all available DEXes on VeChain with their status',
   })
-  async getAvailableDEXes(parameters: InstanceType<typeof GetDEXInfoParameters>) {
+  async getAvailableDEXes(parameters: GetDEXInfoParameters) {
     const { dexName } = parameters.params;
 
     if (dexName) {
@@ -512,7 +512,7 @@ export class DEXService {
     name: 'dex_calculate_slippage',
     description: 'Calculate minimum output amount based on slippage tolerance',
   })
-  async calculateSlippage(parameters: InstanceType<typeof CalculateSlippageParameters>) {
+  async calculateSlippage(parameters: CalculateSlippageParameters) {
     const { expectedAmount, slippagePercent } = parameters.params;
 
     const expected = parseFloat(expectedAmount);
@@ -537,7 +537,7 @@ export class DEXService {
   })
   async getTradeHistory(
     walletClient: VeChainWalletClient,
-    parameters: InstanceType<typeof GetTradeHistoryParameters>
+    parameters: GetTradeHistoryParameters
   ) {
     const address = parameters.params.address || await walletClient.getAddress();
 

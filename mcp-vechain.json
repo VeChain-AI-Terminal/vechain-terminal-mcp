@@ -1,0 +1,18 @@
+{
+    "mcpServers": {
+        "vechain-mcp": {
+            "command": "node",
+            "args": ["/Users/apple/dev/hackathon/vchain/vechain-mcp-server/dist/index.js"],
+            "env": {
+                "WALLET_PRIVATE_KEY": "<YOUR_PRIVATE_KEY>",
+                "WALLET_MNEMONIC": "<YOUR_MNEMONIC>",
+                "VECHAIN_NETWORK": "testnet",
+                "VECHAINSTATS_API_KEY": "<YOUR_VECHAINSTATS_API_KEY>",
+                "VEBETTER_REWARDS_POOL_ADDRESS": "<VEBETTER_CONTRACT_ADDRESS>",
+                "VEBETTER_B3TR_TOKEN_ADDRESS": "<B3TR_TOKEN_ADDRESS>",
+                "VEBETTER_APPS_REGISTRY_ADDRESS": "<APPS_REGISTRY_ADDRESS>",
+                "VEBETTER_APP_ID": "<YOUR_APP_ID>"
+            }
+        }
+    }
+}
