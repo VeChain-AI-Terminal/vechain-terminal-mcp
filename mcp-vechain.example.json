@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "vechain-mcp": {
+            "command": "node",
+            "args": ["/ABSOLUTE/PATH/TO/vechain-mcp-server/dist/index.js"],
+            "env": {
+                "WALLET_PRIVATE_KEY": "<YOUR_PRIVATE_KEY>",
+                "WALLET_MNEMONIC": "<YOUR_MNEMONIC>",
+                "VECHAIN_NETWORK": "testnet"
+            }
+        }
+    }
+}

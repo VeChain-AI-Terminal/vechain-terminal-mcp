@@ -1,0 +1,53 @@
+{
+  "name": "vechain-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for VeChain blockchain operations with cross-chain bridging and VeBetter DAO integration",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "vechain-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean && chmod +x dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "setup-claude": "./setup-claude.sh",
+    "install-smithery": "npx -y @smithery/cli install --client claude",
+    "test-mcp": "node dist/index.js"
+  },
+  "keywords": [
+    "vechain",
+    "mcp",
+    "ai",
+    "blockchain",
+    "bridge",
+    "cross-chain",
+    "vebetter",
+    "hackathon",
+    "smithery"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@smithery/cli": "^1.4.4",
+    "@vechain/sdk-core": "^2.0.4",
+    "@vechain/sdk-network": "^2.0.4",
+    "dotenv": "^16.4.5",
+    "reflect-metadata": "^0.2.2",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.8"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.13.5",
+    "@types/node": "^20.11.5",
+    "tsup": "^8.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "packageManager": "pnpm@10.17.1+sha512.17c560fca4867ae9473a3899ad84a88334914f379be46d452d2583baf19967fa76cb5c17bc9e245529d0b98745721aa7200ecaf7a",
+  "author": "VeChain AI SuperApp Team",
+  "license": "MIT",
+  "smithery": {
+    "badge": "https://smithery.ai/badge/vechain-mcp-server"
+  }
+}
