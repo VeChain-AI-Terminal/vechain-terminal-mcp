@@ -80,3 +80,4 @@ Edit your configuration in `~/Library/Application Support/Claude/claude_desktop_
 ## 🎉 You're Ready!
 
 Your VeChain AI SuperApp is now connected to Claude Desktop with 90+ blockchain tools!
+

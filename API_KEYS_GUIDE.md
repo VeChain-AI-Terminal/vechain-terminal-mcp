@@ -121,3 +121,4 @@ Once set up with minimal config:
 ---
 
 **Bottom Line**: MCP servers are tool providers, not AI consumers. Claude Desktop handles the AI, we just provide blockchain tools! 🚀
+

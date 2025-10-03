@@ -79,3 +79,4 @@ echo "⚠️  Remember to:"
 echo "   • Use testnet for development"
 echo "   • Keep your private keys secure"
 echo "   • Verify all transactions before confirming"
+

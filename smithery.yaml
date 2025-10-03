@@ -55,3 +55,4 @@ startCommand:
   exampleConfig:
     network: "testnet"
     walletMnemonic: "your twelve word mnemonic phrase here for testing purposes only"
+
