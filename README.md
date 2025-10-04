@@ -1,4 +1,5 @@
 # VeChain AI Terminal
+## MCP Server
 
 ![VeChain AI Terminal Banner](src/docs/images/vechain-terminal-banner.png)
 
