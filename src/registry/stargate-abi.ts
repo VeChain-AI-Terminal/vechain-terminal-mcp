@@ -201,6 +201,113 @@ export const STARGATE_NFT_ABI = [
     "stateMutability": "view",
     "type": "function"
   },
+  // Tier/Level functions
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "_levelId",
+        "type": "uint8"
+      }
+    ],
+    "name": "getLevel",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "isX",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint8",
+            "name": "id",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "maturityBlocks",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "scaledRewardFactor",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "vetRequired",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxSupply",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct DataTypes.Level",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLevels",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "isX",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint8",
+            "name": "id",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint64",
+            "name": "maturityBlocks",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "scaledRewardFactor",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "vetRequired",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "maxSupply",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct DataTypes.Level[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
   // Standard ERC721 functions
   {
     "inputs": [

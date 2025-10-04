@@ -87,7 +87,7 @@ export class VeBetterService {
           timestamp: Math.floor(Date.now() / 1000)
         },
         impact: impactCodes && impactValues ? 
-          Object.fromEntries(impactCodes.map((code, i) => [code, impactValues[i]])) : 
+          Object.fromEntries(impactCodes.map((code: string, i: number) => [code, impactValues[i]])) : 
           {}
       };
 
@@ -169,13 +169,18 @@ export class VeBetterService {
         type: 'function'
       };
 
-      // Query the contract
-      const thor = (walletClient as any).thor; // Access Thor client
-      const contract = thor.contracts.get(rewardsPoolAddress, [availableFundsABI]);
-      const result = await contract.methods.availableFunds(appId).call();
+      // ✅ MODERN APPROACH: Use executeCall for contract reads
+      const abi = new ABIContract([availableFundsABI] as any);
+      const availableFundsFunction = abi.getFunction('availableFunds');
+      
+      const result = await walletClient.executeCall(
+        rewardsPoolAddress,
+        availableFundsFunction,
+        [appId]
+      );
 
-      const availableFunds = result.decoded[0];
-      const availableB3TR = (BigInt(availableFunds) / BigInt(10 ** 18)).toString();
+      const availableFunds = result.result.plain as bigint;
+      const availableB3TR = (availableFunds / BigInt(10 ** 18)).toString();
 
       return {
         success: true,
@@ -221,20 +226,26 @@ export class VeBetterService {
         type: 'function'
       };
 
-      // Query the contract
-      const thor = (walletClient as any).thor; // Access Thor client
-      const contract = thor.contracts.get(appsRegistryAddress, [getAppABI]);
+      // ✅ MODERN APPROACH: Use executeCall for contract reads
+      const abi = new ABIContract([getAppABI] as any);
+      const getAppFunction = abi.getFunction('getApp');
       
       try {
-        const result = await contract.methods.getApp(appId).call();
+        const result = await walletClient.executeCall(
+          appsRegistryAddress,
+          getAppFunction,
+          [appId]
+        );
+        
+        const [name, description, active] = result.result.plain as [string, string, boolean];
         
         return {
           success: true,
           app: {
             id: appId,
-            name: result.decoded[0],
-            description: result.decoded[1],
-            active: result.decoded[2],
+            name: name,
+            description: description,
+            active: active,
             registryAddress: appsRegistryAddress
           }
         };

@@ -48,92 +48,6 @@ export const STARGATE_CONTRACTS: Record<string, ContractInfo> = {
 };
 
 /**
- * StarGate NFT Tiers Configuration
- */
-export const STARGATE_TIERS = {
-  8: { // Dawn
-    name: 'Dawn',
-    category: 'New Eco',
-    vetRequired: '10000',
-    supply: 500000,
-    maturityDays: 2,
-    rewardPerBlock: '0.000697615',
-  },
-  9: { // Lightning
-    name: 'Lightning', 
-    category: 'New Eco',
-    vetRequired: '50000',
-    supply: 100000,
-    maturityDays: 5,
-    rewardPerBlock: '0.000390030',
-  },
-  10: { // Flash
-    name: 'Flash',
-    category: 'New Eco', 
-    vetRequired: '200000',
-    supply: 25000,
-    maturityDays: 15,
-    rewardPerBlock: '0.000180745',
-  },
-  1: { // Strength
-    name: 'Strength',
-    category: 'Eco',
-    vetRequired: '1000000',
-    supply: 2500,
-    maturityDays: 30,
-    rewardPerBlock: '0.000122399',
-  },
-  2: { // Thunder
-    name: 'Thunder',
-    category: 'Eco',
-    vetRequired: '5000000',
-    supply: 300,
-    maturityDays: 45,
-    rewardPerBlock: '0.000975076',
-  },
-  3: { // Mjolnir
-    name: 'Mjolnir',
-    category: 'Eco',
-    vetRequired: '15000000',
-    supply: 100,
-    maturityDays: 60,
-    rewardPerBlock: '0.000390030',
-  },
-  4: { // VeThor X
-    name: 'VeThor X',
-    category: 'X',
-    vetRequired: '600000',
-    supply: 735,
-    maturityDays: null, // No maturity for X nodes
-    rewardPerBlock: '0.000766742',
-  },
-  5: { // Strength X
-    name: 'Strength X',
-    category: 'X',
-    vetRequired: '1600000',
-    supply: 843,
-    maturityDays: null,
-    rewardPerBlock: '0.000313546',
-  },
-  6: { // Thunder X
-    name: 'Thunder X',
-    category: 'X',
-    vetRequired: '5600000',
-    supply: 180,
-    maturityDays: null,
-    rewardPerBlock: '0.000136555',
-  },
-  7: { // Mjolnir X
-    name: 'Mjolnir X',
-    category: 'X',
-    vetRequired: '15600000',
-    supply: 158,
-    maturityDays: null,
-    rewardPerBlock: '0.000487252',
-  },
-};
-
-/**
  * Get contract address for a network
  */
 export function getStarGateContractAddress(
@@ -151,25 +65,4 @@ export function getStarGateContractAddress(
   }
 
   return address;
-}
-
-/**
- * Get StarGate tier info by ID
- */
-export function getStarGateTier(tierId: number) {
-  const tier = STARGATE_TIERS[tierId as keyof typeof STARGATE_TIERS];
-  if (!tier) {
-    throw new Error(`StarGate tier ${tierId} not found`);
-  }
-  return { id: tierId, ...tier };
-}
-
-/**
- * Get all available StarGate tiers
- */
-export function getAllStarGateTiers() {
-  return Object.entries(STARGATE_TIERS).map(([id, tier]) => ({
-    id: parseInt(id),
-    ...tier,
-  }));
 }

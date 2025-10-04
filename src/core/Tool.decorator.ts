@@ -76,9 +76,17 @@ function validateMethodParameters(
 
   const methodParameters = Reflect.getMetadata('design:paramtypes', target, propertyKey);
 
-  if (methodParameters == null) {
-    throw new Error(`Failed to get parameters for ${logPrefix}.`);
-  }
+  // if (methodParameters == null) {
+  //   // Skip validation for now due to tsx compatibility issues
+  //   console.warn(`⚠️  Skipping parameter validation for ${logPrefix} (tsx compatibility)`);
+  //   return {
+  //     parameters: {
+  //       index: 1, // Assume parameters are second argument after walletClient
+  //       schema: null,
+  //       constructor: null,
+  //     },
+  //   };
+  // }
   if (methodParameters.length === 0) {
     throw new Error(`${logPrefix} has no parameters. ${explainer}`);
   }

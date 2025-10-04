@@ -1,6 +1,6 @@
 import { Tool } from '../../core/Tool.decorator.js';
 import { VeChainWalletClient } from '../../wallet/VeChainWalletClient.js';
-import { Clause, Address, VET } from '@vechain/sdk-core';
+import { Clause, Address, VET, ABIContract } from '@vechain/sdk-core';
 import {
   TransferVETParameters,
   TransferTokenParameters,
@@ -8,6 +8,7 @@ import {
   GetTokenInfoParameters,
 } from './parameters.js';
 import { getToken } from '../../registry/tokens.js';
+import { ERC20_ABI } from '../../registry/erc20-abi.js';
 import type { TransactionClause } from '../../core/types.js';
 
 /**
@@ -52,38 +53,39 @@ export class TokenService {
   async transferToken(walletClient: VeChainWalletClient, parameters: TransferTokenParameters) {
     const { tokenAddress, to, amount, tokenSymbol } = parameters.params;
 
-    // Use wallet client's method for token info
     try {
       const token = getToken(tokenSymbol || 'UNKNOWN', walletClient.getNetwork());
       const decimals = token.decimals;
       const amountInBaseUnits = BigInt(Math.floor(parseFloat(amount) * Math.pow(10, decimals)));
 
-      // Build ERC20 transfer data
-      // transfer(address,uint256) = 0xa9059cbb
-      const methodId = '0xa9059cbb';
-      const addressPadded = to.slice(2).padStart(64, '0');
-      const amountPadded = amountInBaseUnits.toString(16).padStart(64, '0');
-      const data = methodId + addressPadded + amountPadded;
+      // ✅ MODERN APPROACH: Use ABIContract and Clause.callFunction
+      const erc20Abi = new ABIContract(ERC20_ABI as any);
+      const transferFunction = erc20Abi.getFunction('transfer');
+      
+      const clause = Clause.callFunction(
+        Address.of(tokenAddress),
+        transferFunction,
+        [Address.of(to), amountInBaseUnits]
+      );
 
-      const clause: TransactionClause = {
-        to: tokenAddress,
-        value: '0x0',
-        data: data,
-      };
-
-      // Send transaction
-      const result = await walletClient.sendTransaction([clause]);
+      // Send transaction using modern VeChain SDK
+      const { hash } = await walletClient.sendTransaction([{
+        to: clause.to!,
+        value: clause.value!,
+        data: clause.data!
+      }]);
 
       return {
         success: true,
-        txHash: result.hash,
-        txId: result.id,
+        txHash: hash,
+        txId: hash,
         from: walletClient.getAddress(),
         to,
         amount,
         tokenAddress,
-        explorer: walletClient.getExplorerUrl(result.hash),
-        message: `Successfully transferred ${amount} tokens to ${to}`,
+        tokenSymbol: token.symbol,
+        explorer: walletClient.getExplorerUrl(hash),
+        message: `Successfully transferred ${amount} ${token.symbol} to ${to}`,
       };
     } catch (error: any) {
       throw new Error(`Token transfer failed: ${error.message}`);
@@ -108,16 +110,37 @@ export class TokenService {
       };
     }
 
-    // Use token registry
-    const token = getToken(tokenSymbol, walletClient.getNetwork());
-    
-    // For now, return placeholder - full implementation would query contract
-    return {
-      address,
-      token: token.symbol,
-      message: 'Use vechainstats_get_vip180_balance for token balances',
-      suggestion: 'VeChainStats provides accurate token balance data'
-    };
+    // ✅ MODERN APPROACH: Use executeCall for token balance queries
+    try {
+      const token = getToken(tokenSymbol, walletClient.getNetwork());
+      const erc20Abi = new ABIContract(ERC20_ABI as any);
+      const balanceOfFunction = erc20Abi.getFunction('balanceOf');
+      
+      const result = await walletClient.executeCall(
+        token.address!,
+        balanceOfFunction,
+        [Address.of(address)]
+      );
+
+      const balanceWei = result.result.plain as bigint;
+      const balance = (Number(balanceWei) / Math.pow(10, token.decimals)).toString();
+
+      return {
+        address,
+        token: token.symbol,
+        balance: balance,
+        balanceWei: balanceWei.toString(),
+        decimals: token.decimals,
+        contractAddress: token.address
+      };
+    } catch (error: any) {
+      return {
+        address,
+        token: tokenSymbol,
+        error: `Failed to get balance: ${error.message}`,
+        suggestion: 'Use vechainstats_get_vip180_balance for reliable token balance data'
+      };
+    }
   }
 
   @Tool({
