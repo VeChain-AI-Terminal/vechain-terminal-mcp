@@ -10,6 +10,8 @@ VeChain AI Terminal bridges the gap between AI assistants and blockchain functio
 
 ## Architecture
 
+![VeChain AI Architecture Banner](src/docs/images/vechain-terminal-arc.png)
+
 ```mermaid
 graph TB
     subgraph "Claude Desktop"
@@ -76,6 +78,10 @@ graph TB
 - **Registry Services**: Maintains contract addresses, token definitions, and ABI mappings
 
 ### Plugin Architecture
+
+![VeChain AI Architecture Banner](src/docs/images/vechain-terminal-plugin.png)
+
+
 ```mermaid
 graph LR
     subgraph "Plugin Structure"
