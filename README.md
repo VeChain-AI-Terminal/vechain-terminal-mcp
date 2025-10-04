@@ -69,6 +69,9 @@ graph TB
     K --> R
 ```
 
+
+![VeChain AI Tools Banner](src/docs/images/vechain-terminal-tools.png)
+
 ## System Components
 
 ### Core Framework
