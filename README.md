@@ -31,20 +31,21 @@ graph TB
         H[Cross-Chain Bridges]
         I[NFT Management]
         J[VeBetter DAO]
-        K[Analytics]
+        K[StarGate Staking]
+        L[Analytics]
     end
     
     subgraph "VeChain Network"
-        L[VeChain Mainnet]
-        M[VeChain Testnet]
-        N[Smart Contracts]
+        M[VeChain Mainnet]
+        N[VeChain Testnet]
+        O[Smart Contracts]
     end
     
     subgraph "External APIs"
-        O[VeChainStats API]
-        P[WanBridge API]
-        Q[XFlows API]
-        R[B32 Repository]
+        P[VeChainStats API]
+        Q[WanBridge API]
+        R[XFlows API]
+        S[B32 Repository]
     end
     
     A --> B
@@ -57,16 +58,18 @@ graph TB
     E --> I
     E --> J
     E --> K
+    E --> L
     
-    F --> L
     F --> M
-    G --> N
-    H --> P
+    F --> N
+    G --> O
     H --> Q
-    I --> N
-    J --> N
+    H --> R
+    I --> O
+    J --> O
     K --> O
-    K --> R
+    L --> P
+    L --> S
 ```
 
 
@@ -100,7 +103,8 @@ graph LR
         H[Bridge Plugin<br/>WanBridge, XFlows]
         I[NFT Plugin<br/>VIP-181 operations]
         J[VeBetter Plugin<br/>Sustainable rewards]
-        K[Stats Plugin<br/>Blockchain analytics]
+        K[StarGate Plugin<br/>NFT staking & delegation]
+        L[Stats Plugin<br/>Blockchain analytics]
     end
 ```
 
@@ -135,6 +139,13 @@ graph LR
 - **B3TR Rewards**: Automated token distribution for verified actions
 - **Governance Participation**: Proposal voting and delegation
 - **Impact Tracking**: Environmental contribution monitoring
+
+### StarGate Staking
+- **NFT-Based Staking**: Stake VET to mint tier-specific StarGate NFTs
+- **Multi-Tier System**: Support for all 10 StarGate tiers (Dawn to Mjolnir X)
+- **Delegation Rewards**: Start/stop delegation for enhanced VTHO rewards  
+- **Legacy Migration**: Seamless migration from old VeChain nodes
+- **Real-time Analytics**: Track staking performance and reward accumulation
 
 ## Quick Start
 
@@ -274,6 +285,17 @@ Close and reopen Claude Desktop, Cursor, or VS Code to load the MCP server.
 "Submit a sustainable action: I used public transport for 20km today"
 "Check my available B3TR rewards"
 "Claim my pending VeBetter rewards"
+```
+
+### StarGate Staking Operations
+```
+"Stake 10,000 VET for a Dawn tier StarGate NFT"
+"Show me all my StarGate NFTs and their details"
+"Start delegating my StarGate NFT #123 for rewards"
+"Claim my VTHO rewards from token 456"
+"What are the current StarGate staking tiers and requirements?"
+"Stop delegation for my Mjolnir X node"
+"Get delegation status for my StarGate NFT #789"
 ```
 
 ### Analytics and Data
