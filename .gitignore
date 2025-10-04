@@ -2,7 +2,10 @@ node_modules/
 dist/
 .env
 .env.local
+.env.*.local
 *.log
 .DS_Store
 *.tsbuildinfo
+mcp-vechain.json
+claude_desktop_config.json
 

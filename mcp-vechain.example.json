@@ -6,7 +6,14 @@
             "env": {
                 "WALLET_PRIVATE_KEY": "<YOUR_PRIVATE_KEY>",
                 "WALLET_MNEMONIC": "<YOUR_MNEMONIC>",
-                "VECHAIN_NETWORK": "testnet"
+                "VECHAIN_NETWORK": "testnet",
+                "VECHAINSTATS_API_KEY": "<YOUR_VECHAINSTATS_API_KEY>",
+                "VEBETTER_REWARDS_POOL_ADDRESS": "0x5F8f86B8D0Fa93cdaE20936d150175dF0205fB38",
+                "VEBETTER_B3TR_TOKEN_ADDRESS": "0xbf64cf86894Ee0877C4e7d03936e35Ee8D8b864F",
+                "VEBETTER_APPS_REGISTRY_ADDRESS": "0xcB23Eb1bBD5c07553795b9538b1061D0f4ABA153",
+                "VEBETTER_APP_ID": "<YOUR_APP_ID>",
+                "BRIDGE_API_URL": "https://bridge-api.wanchain.org/api",
+                "BRIDGE_PARTNER": "vechain-ai-superapp"
             }
         }
     }
