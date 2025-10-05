@@ -138,6 +138,16 @@ export class BridgeService {
     this.xflowsApi = XFLOWS_API;
   }
 
+  // Method to switch networks dynamically
+  setNetwork(network: 'mainnet' | 'testnet') {
+    this.network = network;
+    this.wanbridgeApi = WANBRIDGE_API[network];
+  }
+
+  getNetwork(): 'mainnet' | 'testnet' {
+    return this.network;
+  }
+
   // ==================== WANBRIDGE BASIC APIs ====================
 
   @Tool({
