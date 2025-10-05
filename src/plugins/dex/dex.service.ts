@@ -132,15 +132,17 @@ export class DEXService {
       // Build swap path
       const path = [fromTokenAddress, toTokenAddress];
 
-      // Query the router for amounts out using real ABI
-      const thor = (walletClient as any).thor;
+      // ✅ MODERN APPROACH: Use executeCall for contract reads
+      const routerAbi = new ABIContract(UNISWAP_V2_ROUTER_ABI as any);
+      const getAmountsOutFunction = routerAbi.getFunction('getAmountsOut');
       
-      const getAmountsOut = UNISWAP_V2_ROUTER_ABI.find(f => f.name === 'getAmountsOut')!;
-
-      const routerContract = thor.contracts.getContract(routerAddress, [getAmountsOut]);
-
-      const result = await routerContract.methods.getAmountsOut(amountInWei.toString(), path).call();
-      const amounts = result.decoded[0];
+      const result = await walletClient.executeCall(
+        routerAddress,
+        getAmountsOutFunction,
+        [amountInWei, path]
+      );
+      
+      const amounts = result.result.plain as bigint[];
       
       // The last amount in the array is the output amount
       const amountOutWei = amounts[amounts.length - 1];
@@ -345,14 +347,17 @@ export class DEXService {
       const tokenBAddress = this.resolveTokenAddress(tokenB);
 
       // Get pair address from factory using real ABI
-      const thor = (walletClient as any).thor;
+      // ✅ MODERN APPROACH: Use executeCall for factory queries
+      const factoryAbi = new ABIContract(UNISWAP_V2_FACTORY_ABI as any);
+      const getPairFunction = factoryAbi.getFunction('getPair');
       
-      const getPairFunc = UNISWAP_V2_FACTORY_ABI.find(f => f.name === 'getPair')!;
-
-      const factoryContract = thor.contracts.getContract(factoryAddress, [getPairFunc]);
-
-      const pairResult = await factoryContract.methods.getPair(tokenAAddress, tokenBAddress).call();
-      const pairAddress = pairResult.decoded[0];
+      const pairResult = await walletClient.executeCall(
+        factoryAddress,
+        getPairFunction,
+        [Address.of(tokenAAddress), Address.of(tokenBAddress)]
+      );
+      
+      const pairAddress = pairResult.result.plain as string;
 
       if (pairAddress === '0x0000000000000000000000000000000000000000') {
         return {
@@ -362,27 +367,21 @@ export class DEXService {
         };
       }
 
-      // Get reserves from pair contract using real ABIs
-      const getReservesFunc = UNISWAP_V2_PAIR_ABI.find(f => f.name === 'getReserves')!;
-      const token0Func = UNISWAP_V2_PAIR_ABI.find(f => f.name === 'token0')!;
-      const token1Func = UNISWAP_V2_PAIR_ABI.find(f => f.name === 'token1')!;
-
-      const pairContract = thor.contracts.getContract(pairAddress, [
-        getReservesFunc,
-        token0Func,
-        token1Func
-      ]);
+      // ✅ MODERN APPROACH: Use executeCall for pair queries
+      const pairAbi = new ABIContract(UNISWAP_V2_PAIR_ABI as any);
+      const getReservesFunction = pairAbi.getFunction('getReserves');
+      const token0Function = pairAbi.getFunction('token0');
+      const token1Function = pairAbi.getFunction('token1');
 
       const [reservesResult, token0Result, token1Result] = await Promise.all([
-        pairContract.methods.getReserves().call(),
-        pairContract.methods.token0().call(),
-        pairContract.methods.token1().call()
+        walletClient.executeCall(pairAddress, getReservesFunction, []),
+        walletClient.executeCall(pairAddress, token0Function, []),
+        walletClient.executeCall(pairAddress, token1Function, [])
       ]);
 
-      const reserve0 = reservesResult.decoded[0];
-      const reserve1 = reservesResult.decoded[1];
-      const token0 = token0Result.decoded[0];
-      const token1 = token1Result.decoded[0];
+      const [reserve0, reserve1] = reservesResult.result.plain as [bigint, bigint];
+      const token0 = token0Result.result.plain as string;
+      const token1 = token1Result.result.plain as string;
 
       // Determine which reserve corresponds to which token
       const isToken0First = token0.toLowerCase() === tokenAAddress.toLowerCase();

@@ -31,20 +31,21 @@ graph TB
         H[Cross-Chain Bridges]
         I[NFT Management]
         J[VeBetter DAO]
-        K[Analytics]
+        K[StarGate Staking]
+        L[Analytics]
     end
     
     subgraph "VeChain Network"
-        L[VeChain Mainnet]
-        M[VeChain Testnet]
-        N[Smart Contracts]
+        M[VeChain Mainnet]
+        N[VeChain Testnet]
+        O[Smart Contracts]
     end
     
     subgraph "External APIs"
-        O[VeChainStats API]
-        P[WanBridge API]
-        Q[XFlows API]
-        R[B32 Repository]
+        P[VeChainStats API]
+        Q[WanBridge API]
+        R[XFlows API]
+        S[B32 Repository]
     end
     
     A --> B
@@ -57,16 +58,18 @@ graph TB
     E --> I
     E --> J
     E --> K
+    E --> L
     
-    F --> L
     F --> M
-    G --> N
-    H --> P
+    F --> N
+    G --> O
     H --> Q
-    I --> N
-    J --> N
+    H --> R
+    I --> O
+    J --> O
     K --> O
-    K --> R
+    L --> P
+    L --> S
 ```
 
 
@@ -100,7 +103,8 @@ graph LR
         H[Bridge Plugin<br/>WanBridge, XFlows]
         I[NFT Plugin<br/>VIP-181 operations]
         J[VeBetter Plugin<br/>Sustainable rewards]
-        K[Stats Plugin<br/>Blockchain analytics]
+        K[StarGate Plugin<br/>NFT staking & delegation]
+        L[Stats Plugin<br/>Blockchain analytics]
     end
 ```
 
@@ -135,6 +139,14 @@ graph LR
 - **B3TR Rewards**: Automated token distribution for verified actions
 - **Governance Participation**: Proposal voting and delegation
 - **Impact Tracking**: Environmental contribution monitoring
+
+### StarGate Staking
+- **NFT-Based Staking**: Stake VET to mint tier-specific StarGate NFTs
+- **Multi-Tier System**: Support for all 10 StarGate tiers (Dawn to Mjolnir X)
+- **Delegation Rewards**: Start/stop delegation for enhanced VTHO rewards  
+- **Legacy Migration**: Seamless migration from old VeChain nodes
+- **Real-time Analytics**: Track staking performance and reward accumulation
+- **Complete Operations**: 13 fully functional MCP tools for all StarGate operations
 
 ## Quick Start
 
@@ -275,6 +287,127 @@ Close and reopen Claude Desktop, Cursor, or VS Code to load the MCP server.
 "Check my available B3TR rewards"
 "Claim my pending VeBetter rewards"
 ```
+
+### StarGate Staking Operations
+```
+"Stake 10,000 VET for a Dawn tier StarGate NFT"
+"Show me all my StarGate NFTs and their details"
+"Start delegating my StarGate NFT #123 for rewards"
+"Claim my VTHO rewards from token 456"
+"What are the current StarGate staking tiers and requirements?"
+"Stop delegation for my Mjolnir X node"
+"Get delegation status for my StarGate NFT #789"
+"Check if my StarGate NFT can be transferred"
+"Get maturity information for my StarGate NFT"
+"Unstake my StarGate NFT to get my VET back"
+```
+
+## StarGate Operations Reference
+
+The VeChain AI Terminal provides comprehensive StarGate staking functionality with 13 fully tested MCP tools:
+
+### 🏦 Staking Functions
+
+#### `stake_vet`
+Stake VET to mint a StarGate NFT of specified level
+- **Parameters:**
+  - `levelId` (number, 1-10): StarGate tier level ID
+  - `autoDelegate` (boolean, optional): Auto-delegate for additional rewards
+- **Example:** "Stake 5 VET for Lightning level with auto-delegation"
+
+#### `unstake_stargate_nft`
+Unstake a StarGate NFT to burn it and retrieve the staked VET
+- **Parameters:**
+  - `tokenId` (string): StarGate NFT token ID to unstake
+- **Example:** "Unstake my StarGate NFT #100165"
+
+### 📊 Query Functions
+
+#### `get_staking_levels`
+Get all available StarGate staking levels with requirements and rewards
+- **Parameters:**
+  - `category` (optional): Filter by 'all', 'eco', 'x', or 'new-eco'
+- **Returns:** All 10 levels (Dawn, Lightning, Flash, VeThorX, Strength, StrengthX, Thunder, ThunderX, Mjolnir, MjolnirX)
+
+#### `get_user_stakes`
+Get all StarGate NFTs owned by an address with detailed information
+- **Parameters:**
+  - `address` (string): User address to check stakes for
+- **Returns:** Complete portfolio with NFT details
+
+#### `get_stake_info`
+Get detailed information about a specific StarGate NFT by token ID
+- **Parameters:**
+  - `tokenId` (string): StarGate NFT token ID to get info for
+- **Returns:** Complete token details, maturity status, claimable VTHO
+
+### 🔍 Utility Functions
+
+#### `get_ids_owned_by`
+Get all StarGate NFT token IDs owned by an address
+- **Parameters:**
+  - `address` (string): Address to get owned token IDs for
+
+#### `get_level_supply`
+Get circulating supply and cap for a specific StarGate level
+- **Parameters:**
+  - `levelId` (number): Level ID to get supply info for
+
+#### `token_exists`
+Check if a StarGate NFT token exists
+- **Parameters:**
+  - `tokenId` (string): Token ID to check existence
+
+#### `can_transfer_stargate_nft`
+Check if a StarGate NFT can be transferred (maturity period has ended)
+- **Parameters:**
+  - `tokenId` (string): Token ID to check transfer eligibility
+
+#### `get_maturity_end_block`
+Get the block number when the maturity period ends for a StarGate NFT
+- **Parameters:**
+  - `tokenId` (string): Token ID to get maturity end block for
+
+#### `is_under_maturity_period`
+Check if a StarGate NFT is still under maturity period
+- **Parameters:**
+  - `tokenId` (string): Token ID to check maturity status
+
+#### `get_token_level`
+Get the level ID of a StarGate NFT
+- **Parameters:**
+  - `tokenId` (string): Token ID to get level for
+
+### 💰 VTHO Reward Functions
+
+#### `claim_vtho_rewards`
+Claim accumulated VTHO rewards for a StarGate NFT
+- **Parameters:**
+  - `tokenId` (string): StarGate NFT token ID to claim rewards for
+
+### 🎯 StarGate Tier System
+
+| Level | Name | VET Required | Maturity | Reward Factor | Type |
+|-------|------|--------------|----------|---------------|------|
+| 1 | Strength | 100 VET | 30 days | 1.5x | Standard |
+| 2 | Thunder | 1,000 VET | 60 days | 2.0x | Standard |
+| 3 | Mjolnir | 10,000 VET | 90 days | 2.5x | Standard |
+| 4 | VeThorX | 100,000 VET | No maturity | 3.0x | X-Series |
+| 5 | StrengthX | 500,000 VET | No maturity | 3.5x | X-Series |
+| 6 | ThunderX | 1,000,000 VET | No maturity | 4.0x | X-Series |
+| 7 | MjolnirX | 5,000,000 VET | No maturity | 4.5x | X-Series |
+| 8 | Dawn | 1 VET | 7 days | 1.2x | Standard |
+| 9 | Lightning | 5 VET | 14 days | 1.3x | Standard |
+| 10 | Flash | 50 VET | 21 days | 1.4x | Standard |
+
+### ✅ Testing Status
+All 13 StarGate MCP functions have been successfully tested with real transactions on VeChain testnet, including:
+- ✅ Staking operations (stake_vet, unstake_stargate_nft)
+- ✅ Portfolio queries (get_user_stakes, get_stake_info)
+- ✅ Utility functions (token_exists, can_transfer_stargate_nft)
+- ✅ Maturity checks (is_under_maturity_period, get_maturity_end_block)
+- ✅ VTHO rewards (claim_vtho_rewards)
+- ✅ Level management (get_staking_levels, get_level_supply)
 
 ### Analytics and Data
 ```

@@ -5,6 +5,7 @@
 
 export * from './token/token.plugin.js';
 export * from './vechainstats/vechainstats.plugin.js';
+export * from './stargate/stargate.plugin.js';
 
 // Future plugins:
 export * from './bridge/bridge.plugin.js';

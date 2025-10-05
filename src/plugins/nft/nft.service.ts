@@ -113,28 +113,26 @@ export class NFTService {
   ) {
     try {
       const { collectionId } = parameters.params;
-      const thor = (walletClient as any).thor;
 
-      // Get basic contract info
-      const contract = thor.contracts.get(collectionId, [
-        VIP181_FUNCTIONS.name,
-        VIP181_FUNCTIONS.symbol,
-        VIP181_FUNCTIONS.totalSupply
-      ]);
+      // ✅ MODERN APPROACH: Use executeCall for contract reads
+      const vip181Abi = new ABIContract(VIP181_FUNCTIONS as any);
+      const nameFunction = vip181Abi.getFunction('name');
+      const symbolFunction = vip181Abi.getFunction('symbol');
+      const totalSupplyFunction = vip181Abi.getFunction('totalSupply');
 
       const [nameResult, symbolResult, totalSupplyResult] = await Promise.all([
-        contract.methods.name().call(),
-        contract.methods.symbol().call(),
-        contract.methods.totalSupply().call()
+        walletClient.executeCall(collectionId, nameFunction, []),
+        walletClient.executeCall(collectionId, symbolFunction, []),
+        walletClient.executeCall(collectionId, totalSupplyFunction, [])
       ]);
 
       return {
         success: true,
         collection: {
           address: collectionId,
-          name: nameResult.decoded[0],
-          symbol: symbolResult.decoded[0],
-          totalSupply: totalSupplyResult.decoded[0].toString(),
+          name: nameResult.result.plain as string,
+          symbol: symbolResult.result.plain as string,
+          totalSupply: (totalSupplyResult.result.plain as bigint).toString(),
           standard: 'VIP-181',
           network: this.network
         },

@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -7,6 +8,7 @@ import { getOnChainTools } from './adapters/mcp/adapter.js';
 import { VeChainWalletClient } from './wallet/VeChainWalletClient.js';
 import { token } from './plugins/token/token.plugin.js';
 import { vechainstats } from './plugins/vechainstats/vechainstats.plugin.js';
+import { stargate } from './plugins/stargate/stargate.plugin.js';
 import { bridge } from './plugins/bridge/bridge.plugin.js';
 import { vebetter } from './plugins/vebetter/vebetter.plugin.js';
 import { dex } from './plugins/dex/dex.plugin.js';
@@ -47,6 +49,7 @@ async function main() {
     plugins: [
       token(),           // VET and VIP-180 token operations
       vechainstats(),    // Simplified blockchain analytics
+      stargate(),        // StarGate NFT staking and delegation
       bridge(),          // WanBridge cross-chain transfers
       vebetter(),        // VeBetter DAO rewards
       dex(),             // DEX swaps (VeSwap, BetterSwap, etc.)
