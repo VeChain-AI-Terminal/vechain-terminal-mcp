@@ -7,8 +7,8 @@ import { createToolParameters } from '../../utils/createToolParameters.js';
 
 export class StakeVETParameters extends createToolParameters(
   z.object({
-    level: z.number().min(1).max(10).describe('StarGate tier level (1-10)'),
-    amount: z.string().describe('Amount of VET to stake (will be validated against tier requirements)'),
+    levelId: z.number().min(1).max(10).describe('StarGate tier level ID (1-10)'),
+    autoDelegate: z.boolean().optional().describe('Auto-delegate for additional rewards (optional)'),
   })
 ) {}
 
@@ -119,5 +119,57 @@ export class GetNodeManagerParameters extends createToolParameters(
 export class GetStakingLevelsParameters extends createToolParameters(
   z.object({
     category: z.enum(['all', 'eco', 'x', 'new-eco']).optional().describe('Filter tiers by category'),
+  })
+) {}
+
+/**
+ * Additional StarGate View Parameters
+ */
+
+export class GetLevelSupplyParameters extends createToolParameters(
+  z.object({
+    levelId: z.number().min(0).max(10).describe('Level ID to get supply info for'),
+  })
+) {}
+
+export class GetIdsOwnedByParameters extends createToolParameters(
+  z.object({
+    address: z.string().describe('Address to get owned token IDs for'),
+  })
+) {}
+
+export class CanTransferParameters extends createToolParameters(
+  z.object({
+    tokenId: z.string().describe('Token ID to check transfer eligibility'),
+  })
+) {}
+
+export class GetMaturityEndBlockParameters extends createToolParameters(
+  z.object({
+    tokenId: z.string().describe('Token ID to get maturity end block for'),
+  })
+) {}
+
+export class IsUnderMaturityParameters extends createToolParameters(
+  z.object({
+    tokenId: z.string().describe('Token ID to check if under maturity period'),
+  })
+) {}
+
+export class GetTokenLevelParameters extends createToolParameters(
+  z.object({
+    tokenId: z.string().describe('Token ID to get level for'),
+  })
+) {}
+
+export class TokenExistsParameters extends createToolParameters(
+  z.object({
+    tokenId: z.string().describe('Token ID to check existence'),
+  })
+) {}
+
+export class UnstakeParameters extends createToolParameters(
+  z.object({
+    tokenId: z.string().describe('Token ID to unstake'),
   })
 ) {}

@@ -1,640 +1,864 @@
 import { Tool } from '../../core/Tool.decorator.js';
 import { VeChainWalletClient } from '../../wallet/VeChainWalletClient.js';
-import { Address, ABIContract, Clause, VET, Transaction } from '@vechain/sdk-core';
+import { Clause, Address, ABIContract, VET } from '@vechain/sdk-core';
 import {
   StakeVETParameters,
-  StakeAndDelegateVETParameters,
-  UnstakeVETParameters,
   GetUserStakesParameters,
   GetStakeInfoParameters,
   ClaimVTHORewardsParameters,
-  StartDelegationParameters,
-  StopDelegationParameters,
-  ClaimDelegationRewardsParameters,
-  GetDelegationInfoParameters,
-  MigrateLegacyNodeParameters,
-  MigrateAndDelegateParameters,
-  SetNodeManagerParameters,
-  RemoveNodeManagerParameters,
-  GetNodeManagerParameters,
   GetStakingLevelsParameters,
+  GetLevelSupplyParameters,
+  GetIdsOwnedByParameters,
+  CanTransferParameters,
+  GetMaturityEndBlockParameters,
+  IsUnderMaturityParameters,
+  GetTokenLevelParameters,
+  TokenExistsParameters,
+  UnstakeParameters,
 } from './parameters.js';
-import {
-  getStarGateContractAddress,
-} from '../../registry/stargate-contracts.js';
-import {
-  STARGATE_NFT_ABI,
-  STARGATE_DELEGATION_ABI,
-  NODE_MANAGEMENT_ABI,
-} from '../../registry/stargate-abi.js';
+import { getStarGateContractAddress } from '../../registry/stargate-contracts.js';
+import { STARGATE_NFT_ABI } from '../../registry/stargate-abi.js';
+import { 
+  getAllStarGateLevels, 
+  getStarGateLevel, 
+  TokenLevelId, 
+  formatVETAmount,
+  type TokenLevel 
+} from '../../registry/stargate-levels.js';
 import type { TransactionClause } from '../../core/types.js';
 
 /**
- * StarGate operations service
- * Provides tools for StarGate NFT staking, delegation, and management
+ * Official StarGate Staking Service
+ * Based on official StarGate contracts and configurations
+ * Provides comprehensive VET staking and NFT management functionality
  */
 export class StarGateService {
-  
-  /**
-   * Professional category determination based on contract data
-   * Uses multiple data points for accurate categorization
-   */
-  private determineTierCategory(name: string, isX: boolean, id: number): string {
-    // X tiers are explicitly marked in the contract
-    if (isX) {
-      return 'X';
-    }
-
-    // Professional categorization based on tier ID ranges and naming patterns
-    // This is more maintainable than hardcoded string matching
-    
-    // Tier ID-based categorization (most reliable)
-    if (id >= 1 && id <= 3) {
-      return 'Eco'; // Classic Eco tiers
-    } else if (id >= 4 && id <= 6) {
-      return 'New Eco'; // New Eco tiers (Dawn, Lightning, Flash)
-    } else if (id >= 7 && id <= 10) {
-      return 'X'; // X tiers (if not already marked by isX)
-    }
-
-    // Fallback to name-based categorization for edge cases
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('dawn') || lowerName.includes('lightning') || lowerName.includes('flash')) {
-      return 'New Eco';
-    } else if (lowerName.includes('eco') || lowerName.includes('classic')) {
-      return 'Eco';
-    } else if (lowerName.includes('x') || lowerName.includes('premium')) {
-      return 'X';
-    }
-
-    // Default fallback
-    return 'Eco';
-  }
 
   /**
-   * Helper method to get tier info from contract
+   * Stake VET to mint a StarGate NFT of specified level
    */
-  private async getTierInfoFromContract(walletClient: VeChainWalletClient, levelId: number) {
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
-
-    // Create ABI contract instance
-    const stargateAbi = new ABIContract(STARGATE_NFT_ABI as any);
-    const getLevelFunction = stargateAbi.getFunction('getLevel');
-
-    // Call getLevel function using proper VeChain SDK pattern
-    const levelResult = await walletClient.executeCall(
-      contractAddress,
-      getLevelFunction,
-      [levelId]
-    );
-
-    const levelData = levelResult.result.plain as any;
-    
-    // Contract returns an object, not an array
-    const { name, isX, id, maturityBlocks, scaledRewardFactor, vetRequired, maxSupply } = levelData;
-
-    // Professional category determination based on contract data
-    const category = this.determineTierCategory(name, isX, id);
-
-    return {
-      id,
-      name,
-      category,
-      vetRequired: (Number(vetRequired) / 1e18).toString(),
-      supply: Number(maxSupply),
-      maturityDays: maturityBlocks > 0n ? Number(maturityBlocks) / (24 * 60 * 60) : null,
-      rewardPerBlock: scaledRewardFactor.toString(),
-      isX,
-    };
-  }
-  
-  /**
-   * Core Staking Operations
-   */
-
   @Tool({
     name: 'stake_vet',
-    description: 'Stake VET to mint a StarGate NFT of the specified tier level',
+    description: 'Stake VET to mint a StarGate NFT (Dawn, Lightning, Flash, Strength, Thunder, Mjolnir levels)',
   })
   async stakeVET(walletClient: VeChainWalletClient, parameters: StakeVETParameters) {
-    const { level, amount } = parameters.params;
+    const { levelId, autoDelegate } = parameters.params;
     
-    // Validate tier level and get tier info from contract
-    const tierInfo = await this.getTierInfoFromContract(walletClient, level);
-    
-    // Validate amount meets requirements
-    const amountInWei = BigInt(Math.floor(parseFloat(amount) * 1e18));
-    const requiredWei = BigInt(Math.floor(parseFloat(tierInfo.vetRequired) * 1e18));
-    
-    if (amountInWei < requiredWei) {
-      throw new Error(`Insufficient VET amount. Required: ${tierInfo.vetRequired} VET for ${tierInfo.name} tier`);
+    try {
+      // Get contract address for current network
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      // Create ABI contract instance
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      
+      // Get level configuration from contract
+      const getLevelFunction = stargateContract.getFunction('getLevel');
+      const levelResult = await walletClient.executeCall(
+        contractAddress,
+        getLevelFunction,
+        [levelId]
+      );
+      
+      const level = levelResult.result.plain as any;
+      if (!level) {
+        throw new Error(`Invalid level ID: ${levelId}`);
+      }
+
+      const stakeFunction = autoDelegate 
+        ? stargateContract.getFunction('stakeAndDelegate')
+        : stargateContract.getFunction('stake');
+
+      // Build transaction clause with VET value
+      const vetAmount = VET.of(level.vetRequired.toString());
+      const clause = autoDelegate
+        ? Clause.callFunction(
+            Address.of(contractAddress),
+            stakeFunction,
+            [levelId, true], // levelId, autorenew
+            vetAmount
+          )
+        : Clause.callFunction(
+            Address.of(contractAddress),
+            stakeFunction,
+            [levelId],
+            vetAmount
+          );
+
+      // Send transaction
+      const result = await walletClient.sendTransaction([{
+        to: clause.to!,
+        value: clause.value!,
+        data: clause.data!
+      }]);
+
+      return {
+        success: true,
+        txHash: result.hash,
+        txId: result.id,
+        level: level.name,
+        levelId: Number(level.id),
+        vetStaked: formatVETAmount(level.vetRequired.toString()),
+        isX: level.isX,
+        maturityBlocks: Number(level.maturityBlocks),
+        autoDelegate,
+        explorer: walletClient.getExplorerUrl(result.hash),
+        message: `Successfully staked ${formatVETAmount(level.vetRequired.toString())} VET for ${level.name} NFT${autoDelegate ? ' with auto-delegation' : ''}`,
+      };
+    } catch (error: any) {
+      throw new Error(`StarGate staking failed: ${error.message}`);
     }
-
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
-
-    // Create ABI contract instance
-    const stargateAbi = new ABIContract(STARGATE_NFT_ABI as any);
-    const stakeFunction = stargateAbi.getFunction('stake');
-
-    // Create function clause using proper VeChain SDK pattern
-    const clause = Clause.callFunction(
-      Address.of(contractAddress),
-      stakeFunction,
-      [level],
-      VET.of(amount)
-    );
-
-    // Send transaction using proper VeChain SDK pattern
-    const thor = walletClient.getThorClient();
-    const address = walletClient.getAddress();
-
-    // Estimate gas
-    const gasResult = await thor.gas.estimateGas([clause], address);
-
-    // Get default transaction body options
-    const defaultBodyOptions = await thor.transactions.fillDefaultBodyOptions();
-
-    // Build transaction body
-    const txBody = await thor.transactions.buildTransactionBody(
-      [clause],
-      gasResult.totalGas,
-      defaultBodyOptions
-    );
-
-    // Sign and send transaction
-    const txClass = Transaction.of(txBody);
-    const privateKey = walletClient['privateKey']; // Access private key for signing
-    const txSigned = txClass.sign(privateKey);
-    const encodedTx = '0x' + Buffer.from(txSigned.encoded).toString('hex');
-
-    const result = await thor.transactions.sendRawTransaction(encodedTx);
-
-    return {
-      success: true,
-      txHash: result.id,
-      txId: result.id,
-      from: walletClient.getAddress(),
-      tier: tierInfo,
-      amount: amount,
-      contractAddress,
-      explorer: walletClient.getExplorerUrl(result.id),
-      message: `Successfully staked ${amount} VET for ${tierInfo.name} tier StarGate NFT`,
-    };
-  }
-
-  @Tool({
-    name: 'stake_and_delegate_vet',
-    description: 'Stake VET and immediately start delegation for a StarGate NFT',
-  })
-  async stakeAndDelegateVET(walletClient: VeChainWalletClient, parameters: StakeAndDelegateVETParameters) {
-    const { level, amount, delegatee } = parameters.params;
-    
-    // Validate tier level and get tier info from contract
-    const tierInfo = await this.getTierInfoFromContract(walletClient, level);
-    
-    // Validate amount meets requirements
-    const amountInWei = BigInt(Math.floor(parseFloat(amount) * 1e18));
-    const requiredWei = BigInt(Math.floor(parseFloat(tierInfo.vetRequired) * 1e18));
-    
-    if (amountInWei < requiredWei) {
-      throw new Error(`Insufficient VET amount. Required: ${tierInfo.vetRequired} VET for ${tierInfo.name} tier`);
-    }
-
-    // Validate delegatee address
-    if (!Address.isValid(delegatee)) {
-      throw new Error('Invalid delegatee address');
-    }
-
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
-
-    // Build stakeAndDelegate transaction clause
-    const clause: TransactionClause = {
-      to: contractAddress,
-      value: `0x${amountInWei.toString(16)}`,
-      data: walletClient.encodeFunction(STARGATE_NFT_ABI, 'stakeAndDelegate', [level, delegatee]),
-    };
-
-    // Send transaction
-    const result = await walletClient.sendTransaction([clause]);
-
-    return {
-      success: true,
-      txHash: result.hash,
-      txId: result.id,
-      from: walletClient.getAddress(),
-      tier: tierInfo,
-      amount: amount,
-      delegatee,
-      contractAddress,
-      explorer: walletClient.getExplorerUrl(result.hash),
-      message: `Successfully staked ${amount} VET for ${tierInfo.name} tier StarGate NFT with delegation to ${delegatee}`,
-    };
-  }
-
-  @Tool({
-    name: 'unstake_vet',
-    description: 'Burn a StarGate NFT and retrieve the staked VET',
-  })
-  async unstakeVET(walletClient: VeChainWalletClient, parameters: UnstakeVETParameters) {
-    const { tokenId } = parameters.params;
-
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
-
-    // Build unstake transaction clause
-    const clause: TransactionClause = {
-      to: contractAddress,
-      value: '0x0',
-      data: walletClient.encodeFunction(STARGATE_NFT_ABI, 'unstake', [BigInt(tokenId)]),
-    };
-
-    // Send transaction
-    const result = await walletClient.sendTransaction([clause]);
-
-    return {
-      success: true,
-      txHash: result.hash,
-      txId: result.id,
-      from: walletClient.getAddress(),
-      tokenId,
-      contractAddress,
-      explorer: walletClient.getExplorerUrl(result.hash),
-      message: `Successfully unstaked StarGate NFT #${tokenId} and retrieved VET`,
-    };
   }
 
   /**
-   * View Operations
+   * Get all StarGate NFTs owned by an address
    */
-
   @Tool({
     name: 'get_user_stakes',
-    description: 'Get all StarGate NFTs owned by a user address',
+    description: 'Get all StarGate NFTs owned by an address with detailed information',
   })
   async getUserStakes(walletClient: VeChainWalletClient, parameters: GetUserStakesParameters) {
     const { address } = parameters.params;
+    
+    try {
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
 
-    if (!Address.isValid(address)) {
-      throw new Error('Invalid address');
-    }
 
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      
+      // Use tokensOwnedBy which returns full token data directly
+      const tokensOwnedByFunction = stargateContract.getFunction('tokensOwnedBy');
+      
+      const tokensResult = await walletClient.executeCall(
+        contractAddress,
+        tokensOwnedByFunction,
+        [address]
+      );
 
-    // Create ABI contract instance
-    const stargateAbi = new ABIContract(STARGATE_NFT_ABI as any);
-    const tokensOfOwnerFunction = stargateAbi.getFunction('tokensOfOwner');
 
-    // Call tokensOfOwner function using proper VeChain SDK pattern
-    const tokenIdsResult = await walletClient.executeCall(
-      contractAddress,
-      tokensOfOwnerFunction,
-      [address]
-    );
+      const tokenData = tokensResult.result.plain as any;
+      
+      // Handle both single token and array of tokens
+      let tokens = [];
+      if (Array.isArray(tokenData)) {
+        tokens = tokenData;
+      } else if (tokenData && typeof tokenData === 'object') {
+        // Single token object
+        tokens = [tokenData];
+      }
+      
+      if (!tokens || tokens.length === 0) {
+        return {
+          success: true,
+          address,
+          totalStakes: 0,
+          stakes: [],
+          message: `No StarGate NFTs found for address ${address}`,
+        };
+      }
 
-    // Handle case where user has no NFTs (result.plain might be undefined)
-    if (!tokenIdsResult.result || tokenIdsResult.result.plain === undefined) {
+      // Process the token data directly
+      const stakes = [];
+      
+      for (const token of tokens) {
+        try {
+          const levelId = Number(token.levelId);
+          
+          // Get level info from contract
+          const getLevelFunction = stargateContract.getFunction('getLevel');
+          const levelResult = await walletClient.executeCall(
+            contractAddress,
+            getLevelFunction,
+            [levelId]
+          );
+          
+          const contractLevel = levelResult.result.plain as any;
+          
+          stakes.push({
+            tokenId: token.tokenId.toString(),
+            level: contractLevel.name,
+            levelId: Number(contractLevel.id),
+            isX: contractLevel.isX,
+            vetStaked: formatVETAmount(token.vetAmountStaked.toString()),
+            vetStakedWei: token.vetAmountStaked.toString(),
+            mintedAtBlock: token.mintedAtBlock.toString(),
+            lastVthoClaimTimestamp: token.lastVthoClaimTimestamp.toString(),
+            maturityBlocks: Number(contractLevel.maturityBlocks),
+            scaledRewardFactor: Number(contractLevel.scaledRewardFactor),
+          });
+        } catch (error) {
+          throw error;
+        }
+      }
+
       return {
         success: true,
         address,
-        stakes: [],
-        totalStakes: 0,
-        message: `No StarGate NFTs found for address ${address}`,
+        totalStakes: stakes.length,
+        stakes,
+        message: `Found ${stakes.length} StarGate NFT${stakes.length !== 1 ? 's' : ''} for address ${address}`,
       };
+    } catch (error: any) {
+      throw new Error(`Failed to get user stakes: ${error.message}`);
     }
-
-    const tokenIdArray = tokenIdsResult.result.plain as any[];
-    
-    if (!Array.isArray(tokenIdArray)) {
-      throw new Error(`Expected array from tokensOfOwner, got ${typeof tokenIdArray}: ${JSON.stringify(tokenIdArray, (key, value) => 
-        typeof value === 'bigint' ? value.toString() : value)}`);
-    }
-
-    // Get detailed info for each token
-    const stakes = [];
-    for (const tokenId of tokenIdArray) {
-      try {
-        const getTokenFunction = stargateAbi.getFunction('getToken');
-        const tokenInfoResult = await walletClient.executeCall(
-          contractAddress,
-          getTokenFunction,
-          [tokenId]
-        );
-
-        const [level, vetAmount, mintTimestamp, lastRewardClaim] = tokenInfoResult.result.plain as [number, bigint, bigint, bigint];
-        const tierInfo = await this.getTierInfoFromContract(walletClient, level);
-        
-        stakes.push({
-          tokenId: tokenId.toString(),
-          level,
-          tierName: tierInfo.name,
-          category: tierInfo.category,
-          vetAmount: (Number(vetAmount) / 1e18).toString(),
-          mintTimestamp: Number(mintTimestamp),
-          lastRewardClaim: Number(lastRewardClaim),
-        });
-      } catch (error) {
-        // Failed to get info for token - continue with next token
-      }
-    }
-
-    return {
-      success: true,
-      address,
-      totalStakes: stakes.length,
-      stakes,
-      message: `Found ${stakes.length} StarGate NFTs for address ${address}`,
-    };
-  }
-
-  @Tool({
-    name: 'get_stake_info',
-    description: 'Get detailed information about a specific StarGate NFT',
-  })
-  async getStakeInfo(walletClient: VeChainWalletClient, parameters: GetStakeInfoParameters) {
-    const { tokenId } = parameters.params;
-
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
-
-    // Get token info
-    const tokenInfo = await walletClient.call({
-      to: contractAddress,
-      data: walletClient.encodeFunction(STARGATE_NFT_ABI, 'getToken', [BigInt(tokenId)]),
-    });
-
-    const decodedInfo = walletClient.decodeCallResult(['tuple(uint8,uint256,uint256,uint256)'], tokenInfo);
-    const [level, vetAmount, mintTimestamp, lastRewardClaim] = decodedInfo[0] as [number, bigint, bigint, bigint];
-
-    // Get owner
-    const ownerResult = await walletClient.call({
-      to: contractAddress,
-      data: walletClient.encodeFunction(STARGATE_NFT_ABI, 'ownerOf', [BigInt(tokenId)]),
-    });
-    const owner = walletClient.decodeCallResult(['address'], ownerResult)[0] as string;
-
-    // Get available VTHO rewards
-    const vthoRewards = await walletClient.call({
-      to: contractAddress,
-      data: walletClient.encodeFunction(STARGATE_NFT_ABI, 'getGeneratedVTHO', [BigInt(tokenId)]),
-    });
-    const availableVTHO = walletClient.decodeCallResult(['uint256'], vthoRewards)[0] as bigint;
-
-    const tierInfo = await this.getTierInfoFromContract(walletClient, level);
-
-    return {
-      success: true,
-      tokenId,
-      owner,
-      level,
-      tierInfo,
-      vetAmount: (Number(vetAmount) / 1e18).toString(),
-      mintTimestamp: Number(mintTimestamp),
-      lastRewardClaim: Number(lastRewardClaim),
-      availableVTHO: (Number(availableVTHO) / 1e18).toString(),
-      message: `StarGate NFT #${tokenId} - ${tierInfo.name} tier with ${(Number(vetAmount) / 1e18)} VET staked`,
-    };
-  }
-
-  @Tool({
-    name: 'claim_vtho_rewards',
-    description: 'Claim accumulated VTHO rewards from a StarGate NFT',
-  })
-  async claimVTHORewards(walletClient: VeChainWalletClient, parameters: ClaimVTHORewardsParameters) {
-    const { tokenId } = parameters.params;
-
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
-
-    // Build claim transaction clause
-    const clause: TransactionClause = {
-      to: contractAddress,
-      value: '0x0',
-      data: walletClient.encodeFunction(STARGATE_NFT_ABI, 'claimGeneratedVTHO', [BigInt(tokenId)]),
-    };
-
-    // Send transaction
-    const result = await walletClient.sendTransaction([clause]);
-
-    return {
-      success: true,
-      txHash: result.hash,
-      txId: result.id,
-      from: walletClient.getAddress(),
-      tokenId,
-      contractAddress,
-      explorer: walletClient.getExplorerUrl(result.hash),
-      message: `Successfully claimed VTHO rewards for StarGate NFT #${tokenId}`,
-    };
-  }
-
-  @Tool({
-    name: 'get_staking_levels',
-    description: 'Get all available StarGate staking tiers and their requirements',
-  })
-  async getStakingLevels(walletClient: VeChainWalletClient, parameters: GetStakingLevelsParameters) {
-    const { category } = parameters.params;
-
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_NFT', network);
-
-    // Create ABI contract instance
-    const stargateAbi = new ABIContract(STARGATE_NFT_ABI as any);
-    const getLevelsFunction = stargateAbi.getFunction('getLevels');
-
-    // Call getLevels function using proper VeChain SDK pattern
-    const levelsResult = await walletClient.executeCall(
-      contractAddress,
-      getLevelsFunction,
-      []
-    );
-
-    const levelsArray = levelsResult.result.plain as any[];
-    
-    if (!Array.isArray(levelsArray)) {
-      throw new Error(`Expected array from getLevels, got ${typeof levelsArray}: ${JSON.stringify(levelsArray, (key, value) => 
-        typeof value === 'bigint' ? value.toString() : value)}`);
-    }
-
-    // Transform contract data to our expected format - contract returns array of objects
-    let tiers = levelsArray.map((levelData) => {
-      const { name, isX, id, maturityBlocks, scaledRewardFactor, vetRequired, maxSupply } = levelData;
-      
-      // Professional category determination based on contract data
-      const category = this.determineTierCategory(name, isX, id);
-
-      return {
-        id,
-        name,
-        category,
-        vetRequired: (Number(vetRequired) / 1e18).toString(),
-        supply: Number(maxSupply),
-        maturityDays: maturityBlocks > 0n ? Number(maturityBlocks) / (24 * 60 * 60) : null, // Convert blocks to days (assuming ~10s block time)
-        estimatedAPY: scaledRewardFactor.toString(),
-        isX,
-      };
-    });
-
-    // Filter by category if specified
-    if (category && category !== 'all') {
-      const categoryMap = {
-        'eco': 'Eco',
-        'x': 'X',
-        'new-eco': 'New Eco',
-      };
-      
-      const filterCategory = categoryMap[category];
-      if (filterCategory) {
-        tiers = tiers.filter(tier => tier.category === filterCategory);
-      }
-    }
-
-    return {
-      success: true,
-      category: category || 'all',
-      totalTiers: tiers.length,
-      tiers,
-      message: `Retrieved ${tiers.length} StarGate staking tiers${category ? ` for ${category} category` : ''}`,
-    };
   }
 
   /**
-   * Delegation Operations
+   * Get detailed information about a specific StarGate NFT
    */
-
   @Tool({
-    name: 'start_delegation',
-    description: 'Start delegating a StarGate NFT to earn delegation rewards',
+    name: 'get_stake_info',
+    description: 'Get detailed information about a specific StarGate NFT by token ID',
   })
-  async startDelegation(walletClient: VeChainWalletClient, parameters: StartDelegationParameters) {
-    const { tokenId } = parameters.params;
+  async getStakeInfo(walletClient: VeChainWalletClient, parameters: GetStakeInfoParameters) {
+    try {
+      // Robust parameter extraction and validation
+      const rawTokenId = parameters?.params?.tokenId;
+      
+      // Handle null, undefined, and empty values with more specific error messages
+      if (rawTokenId == null || rawTokenId === undefined) {
+        throw new Error(`Token ID parameter is null or undefined. Please provide a valid token ID.`);
+      }
+      
+      if (rawTokenId === '' || rawTokenId === 'null' || rawTokenId === 'undefined') {
+        throw new Error(`Token ID cannot be empty string or the literal string "${rawTokenId}". Please provide a valid numeric token ID.`);
+      }
+      
+      // Convert to string and then to number, handling various input types
+      const tokenIdStr = String(rawTokenId).trim();
+      const tokenIdNum = parseFloat(tokenIdStr);
+      
+      // Validate the number
+      if (!Number.isFinite(tokenIdNum) || tokenIdNum < 0 || !Number.isInteger(tokenIdNum)) {
+        throw new Error(`Invalid token ID: must be a positive integer, received "${rawTokenId}"`);
+      }
+      
+      // Convert to BigInt safely
+      const tokenIdBigInt = BigInt(Math.floor(tokenIdNum));
+      
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
 
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_DELEGATION', network);
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      
+      // First check if token exists
+      const tokenExistsFunction = stargateContract.getFunction('tokenExists');
+      const existsResult = await walletClient.executeCall(
+        contractAddress,
+        tokenExistsFunction,
+        [tokenIdBigInt]
+      );
+      
+      const tokenExists = existsResult.result.plain as boolean;
+      if (!tokenExists) {
+        throw new Error(`StarGate NFT #${tokenIdStr} does not exist`);
+      }
+      
+      // Get token details
+      const getTokenFunction = stargateContract.getFunction('getToken');
+      const tokenResult = await walletClient.executeCall(
+        contractAddress,
+        getTokenFunction,
+        [tokenIdBigInt]
+      );
 
-    // Build start delegation transaction clause
-    const clause: TransactionClause = {
-      to: contractAddress,
-      value: '0x0',
-      data: walletClient.encodeFunction(STARGATE_DELEGATION_ABI, 'startDelegation', [BigInt(tokenId)]),
-    };
+      const tokenData = tokenResult.result.plain as any;
+      
+      // Validate token data
+      if (!tokenData || tokenData.levelId == null) {
+        throw new Error(`Invalid token data returned for StarGate NFT #${tokenIdStr}`);
+      }
+      
+      // Get level info from contract using the correct field name
+      const getLevelFunction = stargateContract.getFunction('getLevel');
+      const levelResult = await walletClient.executeCall(
+        contractAddress,
+        getLevelFunction,
+        [Number(tokenData.levelId)] // Use 'levelId' from the actual struct
+      );
+      const level = levelResult.result.plain as any;
 
-    // Send transaction
-    const result = await walletClient.sendTransaction([clause]);
+      // Get owner
+      const ownerOfFunction = stargateContract.getFunction('ownerOf');
+      const ownerResult = await walletClient.executeCall(
+        contractAddress,
+        ownerOfFunction,
+        [tokenIdBigInt]
+      );
+      const owner = ownerResult.result.plain as string;
 
-    return {
-      success: true,
-      txHash: result.hash,
-      txId: result.id,
-      from: walletClient.getAddress(),
-      tokenId,
-      contractAddress,
-      explorer: walletClient.getExplorerUrl(result.hash),
-      message: `Successfully started delegation for StarGate NFT #${tokenId}`,
-    };
+      // Get claimable VTHO
+      const claimableVthoFunction = stargateContract.getFunction('claimableVetGeneratedVtho');
+      const claimableVthoResult = await walletClient.executeCall(
+        contractAddress,
+        claimableVthoFunction,
+        [tokenIdBigInt]
+      );
+      const claimableVtho = claimableVthoResult.result.plain as bigint;
+
+      // Check if token can be transferred (maturity check)
+      const canTransferFunction = stargateContract.getFunction('canTransfer');
+      const canTransferResult = await walletClient.executeCall(
+        contractAddress,
+        canTransferFunction,
+        [tokenIdBigInt]
+      );
+      const canTransfer = canTransferResult.result.plain as boolean;
+
+      // Get maturity period end block
+      const maturityFunction = stargateContract.getFunction('maturityPeriodEndBlock');
+      const maturityResult = await walletClient.executeCall(
+        contractAddress,
+        maturityFunction,
+        [tokenIdBigInt]
+      );
+      const maturityEndBlock = maturityResult.result.plain as bigint;
+
+      return {
+        success: true,
+        tokenId: tokenIdStr,
+        owner,
+        level: level.name,
+        levelId: Number(level.id),
+        isX: level.isX,
+        vetStaked: formatVETAmount(tokenData.vetAmountStaked.toString()), // Correct field name
+        vetStakedWei: tokenData.vetAmountStaked.toString(),
+        mintedAtBlock: tokenData.mintedAtBlock.toString(), // Correct field name
+        lastVthoClaimTimestamp: tokenData.lastVthoClaimTimestamp.toString(), // Correct field name
+        maturityBlocks: Number(level.maturityBlocks),
+        scaledRewardFactor: Number(level.scaledRewardFactor),
+        claimableVtho: (Number(claimableVtho) / 1e18).toFixed(4),
+        claimableVthoWei: claimableVtho.toString(),
+        canTransfer,
+        maturityEndBlock: maturityEndBlock.toString(),
+        message: `StarGate NFT #${tokenIdStr} - ${level.name} owned by ${owner}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to get stake info: ${error.message}`);
+    }
   }
 
+  /**
+   * Claim VTHO rewards for a StarGate NFT
+   */
   @Tool({
-    name: 'stop_delegation',
-    description: 'Stop delegating a StarGate NFT',
+    name: 'claim_vtho_rewards',
+    description: 'Claim accumulated VTHO rewards for a StarGate NFT',
   })
-  async stopDelegation(walletClient: VeChainWalletClient, parameters: StopDelegationParameters) {
+  async claimVTHORewards(walletClient: VeChainWalletClient, parameters: ClaimVTHORewardsParameters) {
     const { tokenId } = parameters.params;
+    
+    try {
+      // Validate tokenId parameter
+      if (!tokenId || tokenId === null || tokenId === undefined) {
+        throw new Error('Token ID is required');
+      }
+      
+      const tokenIdNum = Number(tokenId);
+      if (isNaN(tokenIdNum)) {
+        throw new Error(`Invalid token ID: ${tokenId}`);
+      }
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
 
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_DELEGATION', network);
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const claimFunction = stargateContract.getFunction('claimVetGeneratedVtho');
 
-    // Build stop delegation transaction clause
-    const clause: TransactionClause = {
-      to: contractAddress,
-      value: '0x0',
-      data: walletClient.encodeFunction(STARGATE_DELEGATION_ABI, 'stopDelegation', [BigInt(tokenId)]),
-    };
+      const clause = Clause.callFunction(
+        Address.of(contractAddress),
+        claimFunction,
+        [BigInt(tokenIdNum)]
+      );
 
-    // Send transaction
-    const result = await walletClient.sendTransaction([clause]);
+      const result = await walletClient.sendTransaction([{
+        to: clause.to!,
+        value: clause.value!,
+        data: clause.data!
+      }]);
 
-    return {
-      success: true,
-      txHash: result.hash,
-      txId: result.id,
-      from: walletClient.getAddress(),
-      tokenId,
-      contractAddress,
-      explorer: walletClient.getExplorerUrl(result.hash),
-      message: `Successfully stopped delegation for StarGate NFT #${tokenId}`,
-    };
+      return {
+        success: true,
+        txHash: result.hash,
+        txId: result.id,
+        tokenId,
+        explorer: walletClient.getExplorerUrl(result.hash),
+        message: `Successfully claimed VTHO rewards for StarGate NFT #${tokenId}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to claim VTHO rewards: ${error.message}`);
+    }
   }
 
+  /**
+   * Get all available StarGate staking levels and their requirements
+   */
   @Tool({
-    name: 'claim_delegation_rewards',
-    description: 'Claim delegation rewards for a StarGate NFT',
+    name: 'get_staking_levels',
+    description: 'Get all available StarGate staking levels with requirements and rewards',
   })
-  async claimDelegationRewards(walletClient: VeChainWalletClient, parameters: ClaimDelegationRewardsParameters) {
-    const { tokenId } = parameters.params;
+  async getStakingLevels(walletClient: VeChainWalletClient, parameters: GetStakingLevelsParameters) {
+    try {
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
 
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_DELEGATION', network);
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      
+      // Get levels directly from the contract
+      const getLevelsFunction = stargateContract.getFunction('getLevels');
+      const levelsResult = await walletClient.executeCall(
+        contractAddress,
+        getLevelsFunction,
+        []
+      );
 
-    // Build claim rewards transaction clause
-    const clause: TransactionClause = {
-      to: contractAddress,
-      value: '0x0',
-      data: walletClient.encodeFunction(STARGATE_DELEGATION_ABI, 'claimRewards', [BigInt(tokenId)]),
-    };
 
-    // Send transaction
-    const result = await walletClient.sendTransaction([clause]);
+      const contractLevels = levelsResult.result.plain as any[];
+      
+      if (!contractLevels || contractLevels.length === 0) {
+        return {
+          success: true,
+          network: walletClient.getNetwork(),
+          totalLevels: 0,
+          levels: [],
+          message: `No StarGate staking levels found on ${walletClient.getNetwork()}`,
+        };
+      }
 
-    return {
-      success: true,
-      txHash: result.hash,
-      txId: result.id,
-      from: walletClient.getAddress(),
-      tokenId,
-      contractAddress,
-      explorer: walletClient.getExplorerUrl(result.hash),
-      message: `Successfully claimed delegation rewards for StarGate NFT #${tokenId}`,
-    };
+      const formattedLevels = contractLevels.map((level: any) => ({
+        id: Number(level.id),
+        name: level.name,
+        isX: level.isX,
+        vetRequired: formatVETAmount(level.vetRequired.toString()),
+        vetRequiredWei: level.vetRequired.toString(),
+        scaledRewardFactor: Number(level.scaledRewardFactor),
+        maturityBlocks: Number(level.maturityBlocks),
+        maturityDays: Math.round(Number(level.maturityBlocks) / 8640), // 8640 blocks per day
+        maxSupply: Number(level.maxSupply),
+        category: level.isX ? 'X Node' : 'Standard Node',
+        description: this.getContractLevelDescription(level),
+      }));
+
+      // Sort by VET requirement (ascending)
+      formattedLevels.sort((a, b) => BigInt(a.vetRequiredWei) > BigInt(b.vetRequiredWei) ? 1 : -1);
+
+      return {
+        success: true,
+        network: walletClient.getNetwork(),
+        totalLevels: formattedLevels.length,
+        levels: formattedLevels,
+        message: `Available StarGate staking levels on ${walletClient.getNetwork()}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to get staking levels: ${error.message}`);
+    }
   }
 
+  /**
+   * Get level description for UI display (from contract data)
+   */
+  private getContractLevelDescription(level: any): string {
+    const category = level.isX ? 'X-Series' : 'Standard';
+    const maturityDays = Math.round(Number(level.maturityBlocks) / 8640);
+    
+    if (level.isX) {
+      return `${category} node with ${Number(level.scaledRewardFactor)}x reward multiplier. No maturity period.`;
+    } else {
+      return `${category} node requiring ${formatVETAmount(level.vetRequired.toString())} VET with ${maturityDays}-day maturity period and ${Number(level.scaledRewardFactor)}x reward multiplier.`;
+    }
+  }
+
+  /**
+   * Get level description for UI display (from local data)
+   */
+  private getLevelDescription(level: TokenLevel): string {
+    const category = level.isX ? 'X-Series' : 'Standard';
+    const maturityDays = Math.round(level.maturityBlocks / 8640);
+    
+    if (level.isX) {
+      return `${category} node with ${level.scaledRewardFactor}x reward multiplier. No maturity period.`;
+    } else {
+      return `${category} node requiring ${formatVETAmount(level.vetAmountRequiredToStake)} VET with ${maturityDays}-day maturity period and ${level.scaledRewardFactor}x reward multiplier.`;
+    }
+  }
+
+  /**
+   * Unstake a StarGate NFT
+   */
   @Tool({
-    name: 'get_delegation_info',
-    description: 'Get delegation status and rewards for a StarGate NFT',
+    name: 'unstake_stargate_nft',
+    description: 'Unstake a StarGate NFT to burn it and retrieve the staked VET',
   })
-  async getDelegationInfo(walletClient: VeChainWalletClient, parameters: GetDelegationInfoParameters) {
+  async unstake(walletClient: VeChainWalletClient, parameters: UnstakeParameters) {
     const { tokenId } = parameters.params;
+    
+    try {
+      if (!tokenId || tokenId === null || tokenId === undefined) {
+        throw new Error('Token ID is required');
+      }
+      
+      const tokenIdNum = Number(tokenId);
+      if (isNaN(tokenIdNum)) {
+        throw new Error(`Invalid token ID: ${tokenId}`);
+      }
+      
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
 
-    const network = walletClient.getNetwork();
-    const contractAddress = getStarGateContractAddress('STARGATE_DELEGATION', network);
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const unstakeFunction = stargateContract.getFunction('unstake');
 
-    // Get delegation info
-    const delegationInfo = await walletClient.call({
-      to: contractAddress,
-      data: walletClient.encodeFunction(STARGATE_DELEGATION_ABI, 'getDelegationInfo', [BigInt(tokenId)]),
-    });
+      const clause = Clause.callFunction(
+        Address.of(contractAddress),
+        unstakeFunction,
+        [BigInt(tokenIdNum)]
+      );
 
-    const decodedInfo = walletClient.decodeCallResult(['tuple(bool,uint256,uint256)'], delegationInfo);
-    const [isDelegating, delegationStart, lastRewardClaim] = decodedInfo[0] as [boolean, bigint, bigint];
+      const result = await walletClient.sendTransaction([{
+        to: clause.to!,
+        value: clause.value!,
+        data: clause.data!
+      }]);
 
-    // Get available rewards
-    const availableRewards = await walletClient.call({
-      to: contractAddress,
-      data: walletClient.encodeFunction(STARGATE_DELEGATION_ABI, 'getAvailableRewards', [BigInt(tokenId)]),
-    });
-    const rewards = walletClient.decodeCallResult(['uint256'], availableRewards)[0] as bigint;
+      return {
+        success: true,
+        txHash: result.hash,
+        txId: result.id,
+        tokenId,
+        explorer: walletClient.getExplorerUrl(result.hash),
+        message: `Successfully unstaked StarGate NFT #${tokenId}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to unstake StarGate NFT: ${error.message}`);
+    }
+  }
 
-    return {
-      success: true,
-      tokenId,
-      isDelegating,
-      delegationStart: Number(delegationStart),
-      lastRewardClaim: Number(lastRewardClaim),
-      availableRewards: (Number(rewards) / 1e18).toString(),
-      message: `StarGate NFT #${tokenId} delegation status: ${isDelegating ? 'Active' : 'Inactive'}`,
-    };
+  /**
+   * Check if a StarGate NFT can be transferred (not under maturity period)
+   */
+  @Tool({
+    name: 'can_transfer_stargate_nft',
+    description: 'Check if a StarGate NFT can be transferred (maturity period has ended)',
+  })
+  async canTransfer(walletClient: VeChainWalletClient, parameters: CanTransferParameters) {
+    const { tokenId } = parameters.params;
+    
+    try {
+      if (!tokenId || tokenId === null || tokenId === undefined) {
+        throw new Error('Token ID is required');
+      }
+      
+      const tokenIdNum = Number(tokenId);
+      if (isNaN(tokenIdNum)) {
+        throw new Error(`Invalid token ID: ${tokenId}`);
+      }
+      
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const canTransferFunction = stargateContract.getFunction('canTransfer');
+
+      const result = await walletClient.executeCall(
+        contractAddress,
+        canTransferFunction,
+        [BigInt(tokenIdNum)]
+      );
+
+      const canTransfer = result.result.plain as boolean;
+
+      return {
+        success: true,
+        tokenId,
+        canTransfer,
+        message: `StarGate NFT #${tokenId} ${canTransfer ? 'can' : 'cannot'} be transferred`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to check transfer eligibility: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get the maturity period end block for a StarGate NFT
+   */
+  @Tool({
+    name: 'get_maturity_end_block',
+    description: 'Get the block number when the maturity period ends for a StarGate NFT',
+  })
+  async getMaturityEndBlock(walletClient: VeChainWalletClient, parameters: GetMaturityEndBlockParameters) {
+    const { tokenId } = parameters.params;
+    
+    try {
+      if (!tokenId || tokenId === null || tokenId === undefined) {
+        throw new Error('Token ID is required');
+      }
+      
+      const tokenIdNum = Number(tokenId);
+      if (isNaN(tokenIdNum)) {
+        throw new Error(`Invalid token ID: ${tokenId}`);
+      }
+      
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const maturityFunction = stargateContract.getFunction('maturityPeriodEndBlock');
+
+      const result = await walletClient.executeCall(
+        contractAddress,
+        maturityFunction,
+        [BigInt(tokenIdNum)]
+      );
+
+      const maturityEndBlock = result.result.plain as bigint;
+
+      return {
+        success: true,
+        tokenId,
+        maturityEndBlock: maturityEndBlock.toString(),
+        message: `Maturity period for StarGate NFT #${tokenId} ends at block ${maturityEndBlock.toString()}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to get maturity end block: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check if a StarGate NFT is under maturity period
+   */
+  @Tool({
+    name: 'is_under_maturity_period',
+    description: 'Check if a StarGate NFT is still under maturity period',
+  })
+  async isUnderMaturityPeriod(walletClient: VeChainWalletClient, parameters: IsUnderMaturityParameters) {
+    const { tokenId } = parameters.params;
+    
+    try {
+      if (!tokenId || tokenId === null || tokenId === undefined) {
+        throw new Error('Token ID is required');
+      }
+      
+      const tokenIdNum = Number(tokenId);
+      if (isNaN(tokenIdNum)) {
+        throw new Error(`Invalid token ID: ${tokenId}`);
+      }
+      
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const isUnderMaturityFunction = stargateContract.getFunction('isUnderMaturityPeriod');
+
+      const result = await walletClient.executeCall(
+        contractAddress,
+        isUnderMaturityFunction,
+        [BigInt(tokenIdNum)]
+      );
+
+      const isUnderMaturity = result.result.plain as boolean;
+
+      return {
+        success: true,
+        tokenId,
+        isUnderMaturity,
+        message: `StarGate NFT #${tokenId} is ${isUnderMaturity ? 'under' : 'not under'} maturity period`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to check maturity status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get the level of a StarGate NFT
+   */
+  @Tool({
+    name: 'get_token_level',
+    description: 'Get the level ID of a StarGate NFT',
+  })
+  async getTokenLevel(walletClient: VeChainWalletClient, parameters: GetTokenLevelParameters) {
+    const { tokenId } = parameters.params;
+    
+    try {
+      if (!tokenId || tokenId === null || tokenId === undefined) {
+        throw new Error('Token ID is required');
+      }
+      
+      const tokenIdNum = Number(tokenId);
+      if (isNaN(tokenIdNum)) {
+        throw new Error(`Invalid token ID: ${tokenId}`);
+      }
+      
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const getTokenLevelFunction = stargateContract.getFunction('getTokenLevel');
+
+      const result = await walletClient.executeCall(
+        contractAddress,
+        getTokenLevelFunction,
+        [BigInt(tokenIdNum)]
+      );
+
+      const levelId = result.result.plain as number;
+
+      return {
+        success: true,
+        tokenId,
+        levelId: Number(levelId),
+        message: `StarGate NFT #${tokenId} has level ID ${levelId}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to get token level: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get all token IDs owned by an address
+   */
+  @Tool({
+    name: 'get_ids_owned_by',
+    description: 'Get all StarGate NFT token IDs owned by an address',
+  })
+  async getIdsOwnedBy(walletClient: VeChainWalletClient, parameters: GetIdsOwnedByParameters) {
+    const { address } = parameters.params;
+    
+    try {
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const idsOwnedByFunction = stargateContract.getFunction('idsOwnedBy');
+
+      const result = await walletClient.executeCall(
+        contractAddress,
+        idsOwnedByFunction,
+        [address]
+      );
+
+      const tokenIds = result.result.plain as bigint[];
+      const formattedIds = tokenIds.map(id => id.toString());
+
+      return {
+        success: true,
+        address,
+        tokenIds: formattedIds,
+        totalCount: formattedIds.length,
+        message: `Found ${formattedIds.length} StarGate NFT${formattedIds.length !== 1 ? 's' : ''} owned by ${address}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to get owned token IDs: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get supply information for a specific level
+   */
+  @Tool({
+    name: 'get_level_supply',
+    description: 'Get circulating supply and cap for a specific StarGate level',
+  })
+  async getLevelSupply(walletClient: VeChainWalletClient, parameters: GetLevelSupplyParameters) {
+    const { levelId } = parameters.params;
+    
+    try {
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const getLevelSupplyFunction = stargateContract.getFunction('getLevelSupply');
+
+      const result = await walletClient.executeCall(
+        contractAddress,
+        getLevelSupplyFunction,
+        [levelId]
+      );
+
+      const supplyData = result.result.plain as any;
+      const circulatingSupply = Number(supplyData.circulating || supplyData[0]);
+      const cap = Number(supplyData.cap || supplyData[1]);
+
+      return {
+        success: true,
+        levelId,
+        circulatingSupply,
+        cap,
+        availableSupply: cap - circulatingSupply,
+        message: `Level ${levelId}: ${circulatingSupply}/${cap} minted`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to get level supply: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check if a token exists
+   */
+  @Tool({
+    name: 'token_exists',
+    description: 'Check if a StarGate NFT token exists',
+  })
+  async tokenExists(walletClient: VeChainWalletClient, parameters: TokenExistsParameters) {
+    const { tokenId } = parameters.params;
+    
+    try {
+      if (!tokenId || tokenId === null || tokenId === undefined) {
+        throw new Error('Token ID is required');
+      }
+      
+      const tokenIdNum = Number(tokenId);
+      if (isNaN(tokenIdNum)) {
+        throw new Error(`Invalid token ID: ${tokenId}`);
+      }
+      
+      const contractAddress = getStarGateContractAddress(
+        'STARGATE_NFT',
+        walletClient.getNetwork()
+      );
+
+      const stargateContract = new ABIContract(STARGATE_NFT_ABI as any);
+      const tokenExistsFunction = stargateContract.getFunction('tokenExists');
+
+      const result = await walletClient.executeCall(
+        contractAddress,
+        tokenExistsFunction,
+        [BigInt(tokenIdNum)]
+      );
+
+      const exists = result.result.plain as boolean;
+
+      return {
+        success: true,
+        tokenId,
+        exists,
+        message: `StarGate NFT #${tokenId} ${exists ? 'exists' : 'does not exist'}`,
+      };
+    } catch (error: any) {
+      throw new Error(`Failed to check token existence: ${error.message}`);
+    }
   }
 }
