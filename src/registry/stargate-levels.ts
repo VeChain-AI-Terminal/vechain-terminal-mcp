@@ -121,7 +121,7 @@ export const STARGATE_LEVELS: Record<TokenLevelId, TokenLevel> = {
     id: TokenLevelId.Dawn,
     name: "Dawn",
     isX: false,
-    vetAmountRequiredToStake: "10000000000000000000000", // 10K VET
+    vetAmountRequiredToStake: "1000000000000000000", // 1 VET
     scaledRewardFactor: 100,
     maturityBlocks: BLOCKS_PER_DAY * 2,
     cap: 500000,
@@ -131,7 +131,7 @@ export const STARGATE_LEVELS: Record<TokenLevelId, TokenLevel> = {
     id: TokenLevelId.Lightning,
     name: "Lightning",
     isX: false,
-    vetAmountRequiredToStake: "50000000000000000000000", // 50K VET
+    vetAmountRequiredToStake: "5000000000000000000", // 5 VET
     scaledRewardFactor: 115,
     maturityBlocks: BLOCKS_PER_DAY * 5,
     cap: 100000,
@@ -141,7 +141,7 @@ export const STARGATE_LEVELS: Record<TokenLevelId, TokenLevel> = {
     id: TokenLevelId.Flash,
     name: "Flash",
     isX: false,
-    vetAmountRequiredToStake: "200000000000000000000000", // 200K VET
+    vetAmountRequiredToStake: "20000000000000000000", // 20 VET
     scaledRewardFactor: 130,
     maturityBlocks: BLOCKS_PER_DAY * 15,
     cap: 25000,
@@ -172,5 +172,5 @@ export function getAllStarGateLevels(): TokenLevel[] {
  */
 export function formatVETAmount(weiAmount: string): string {
   const vet = BigInt(weiAmount) / BigInt('1000000000000000000');
-  return vet.toLocaleString();
+  return vet?.toLocaleString();
 }
