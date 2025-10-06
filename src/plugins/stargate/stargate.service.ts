@@ -72,7 +72,7 @@ export class StarGateService {
         : stargateContract.getFunction('stake');
 
       // Build transaction clause with VET value
-      const vetAmount = VET.of(level.vetRequired.toString());
+      const vetAmount = VET.of((level.vetRequired / BigInt(1e18)).toString());
       const clause = autoDelegate
         ? Clause.callFunction(
             Address.of(contractAddress),
